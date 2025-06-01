@@ -30,31 +30,31 @@
             Route="CoursesPage" />
     </FlyoutItem>
 
-    <!-- Задания 
+    <!-- Задания        -->
     <FlyoutItem Title="Задания" Icon="assignment.png">
         <ShellContent
             Title="Задания"
             ContentTemplate="{DataTemplate views:AssignmentsPage}"
             Route="AssignmentsPage" />
-    </FlyoutItem>     -->
+    </FlyoutItem>
 
-    <!-- Профиль 
+    <!-- Профиль       -->
     <FlyoutItem Title="Профиль" >
         <ShellContent
             Title="Профиль"
             ContentTemplate="{DataTemplate views:ProfilePage}"
             Route="ProfilePage" />
-    </FlyoutItem>   -->
+    </FlyoutItem>
 
-    <!-- Меню администратора
+    <!-- Меню администратора      -->
     <FlyoutItem Title="Управление" >
         <ShellContent
             Title="Пользователи"
             ContentTemplate="{DataTemplate views:UsersPage}"
             Route="UsersPage" />
-    </FlyoutItem> -->
+    </FlyoutItem>
 
-    <!-- Нижнее меню 
+    <!-- Нижнее меню        -->
     <TabBar>
         <Tab Title="Настройки" >
             <ShellContent
@@ -62,7 +62,7 @@
                 ContentTemplate="{DataTemplate views:SettingsPage}"
                 Route="SettingsPage" />
         </Tab>
-    </TabBar>       -->
+    </TabBar>       
 
     <!-- Регистрация маршрутов для неавторизованных пользователей -->
     <ShellContent
@@ -74,4 +74,15 @@
         Title="Регистрация"
         ContentTemplate="{DataTemplate views:RegisterPage}"
         Route="Register" />
+
+    <!-- Добавьте перед закрывающим тегом Shell -->
+    <ShellContent
+        Title="Личные сообщения"
+        ContentTemplate="{DataTemplate views:ChatPage}"
+        Route="ChatPage" />
+
+    <ShellContent
+        Title="Групповые чаты"
+        ContentTemplate="{DataTemplate views:GroupChatsPage}"
+        Route="GroupChatsPage" />
 </Shell>

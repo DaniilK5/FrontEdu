@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="FrontEdu.Views.DirectChatPage">
+    <Grid RowDefinitions="*, Auto">
+        <!-- Область сообщений -->
+        <CollectionView 
+            x:Name="MessagesCollection"
+            Grid.Row="0"
+            ItemsSource="{Binding Messages}"
+            RemainingItemsThreshold="2"
+            RemainingItemsThresholdReached="OnLoadMoreMessages">
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <Grid Padding="10">
+                        <Frame
+                            BackgroundColor="{Binding IsFromCurrentUser, Converter={StaticResource MessageColorConverter}}"
+                            Padding="10"
+                            HorizontalOptions="{Binding IsFromCurrentUser, Converter={StaticResource MessageAlignmentConverter}}">
+                            <VerticalStackLayout>
+                                <Grid ColumnDefinitions="*, Auto">
+                                    <Label 
+                                        Grid.Column="0"
+                                        Text="{Binding Sender.FullName}"
+                                        FontAttributes="Bold"/>
+                                    <!-- Кнопка редактирования, видимая только для своих сообщений -->
+                                    <Button 
+                                        Grid.Column="1"
+                                        Text="✎"
+                                        IsVisible="{Binding IsFromCurrentUser}"
+                                        Clicked="OnEditMessageClicked"
+                                        CommandParameter="{Binding .}"
+                                        Style="{StaticResource TextButton}"
+                                        Padding="5"
+                                        FontSize="16"/>
+                                </Grid>
+                                <Label 
+                                    Text="{Binding Content}"/>
+                                <Label 
+                                    Text="{Binding Timestamp, StringFormat='{0:HH:mm}'}"
+                                    FontSize="Small"
+                                    TextColor="Gray"/>
+                                <!-- Отображение вложения, если есть -->
+                                <Button 
+                                    Text="{Binding AttachmentName}"
+                                    IsVisible="{Binding HasAttachment}"
+                                    Clicked="OnAttachmentClicked"
+                                    CommandParameter="{Binding Id}"/>
+                            </VerticalStackLayout>
+                        </Frame>
+                    </Grid>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+        <!-- Панель редактирования сообщения -->
+        <Grid x:Name="EditMessagePanel" 
+              Grid.Row="0" 
+              IsVisible="False"
+              BackgroundColor="#80000000"
+              VerticalOptions="End">
+            <Frame Margin="10" Padding="10">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Редактирование сообщения" 
+                           FontAttributes="Bold"/>
+                    <Entry x:Name="EditMessageEntry"/>
+                    <HorizontalStackLayout Spacing="10">
+                        <Button Text="Сохранить" 
+                                Clicked="OnSaveEditClicked"/>
+                        <Button Text="Отмена" 
+                                Clicked="OnCancelEditClicked"
+                                BackgroundColor="{StaticResource Gray500}"/>
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Frame>
+        </Grid>
+
+        <!-- Панель ввода -->
+        <Grid Grid.Row="1" ColumnDefinitions="*, Auto, Auto" Padding="10">
+            <Entry 
+                x:Name="MessageEntry"
+                Grid.Column="0"
+                Placeholder="Введите сообщение..."/>
+            <Button 
+                Grid.Column="1"
+                Text="📎"
+                Clicked="OnAttachFileClicked"/>
+            <Button 
+                Grid.Column="2"
+                Text="Отправить"
+                Clicked="OnSendClicked"/>
+        </Grid>
+    </Grid>
+</ContentPage>

@@ -72,6 +72,28 @@
                 </VerticalStackLayout>
             </Frame>
 
+            <!-- Добавьте новую секцию для чатов после существующих секций -->
+            <Frame Padding="15" BorderColor="Gray">
+                <VerticalStackLayout Spacing="15">
+                    <Label 
+                        Text="Сообщения"
+                        FontSize="24"
+                        HorizontalOptions="Center"/>
+                    
+                    <Button 
+                        x:Name="ChatButton"
+                        Text="Личные сообщения"
+                        Clicked="OnChatClicked"
+                        HorizontalOptions="Fill"/>
+                    
+                    <Button 
+                        x:Name="GroupChatsButton"
+                        Text="Групповые чаты"
+                        Clicked="OnGroupChatsClicked"
+                        HorizontalOptions="Fill"/>
+                </VerticalStackLayout>
+            </Frame>
+
             <Button 
                 Text="Выйти"
                 Clicked="OnLogoutClicked"

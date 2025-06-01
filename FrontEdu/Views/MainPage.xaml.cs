@@ -73,5 +73,15 @@ namespace FrontEdu.Views
                 await Shell.Current.GoToAsync("//UsersPage");
             }
         }
+
+        private async void OnChatClicked(object sender, EventArgs e)
+        {
+            await Shell.Current.GoToAsync("//ChatPage");
+        }
+
+        private async void OnGroupChatsClicked(object sender, EventArgs e)
+        {
+            await Shell.Current.GoToAsync("//GroupChatsPage");
+        }
     }
 }

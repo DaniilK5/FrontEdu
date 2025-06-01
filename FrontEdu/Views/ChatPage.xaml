@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="FrontEdu.Views.ChatPage"
+             Title="Личные сообщения">
+    <Grid RowDefinitions="Auto,Auto,*" Padding="20">
+        <VerticalStackLayout Grid.Row="0" Spacing="20">
+            <Label 
+                Text="Выберите пользователя для чата"
+                SemanticProperties.HeadingLevel="Level1"
+                FontSize="24"
+                HorizontalOptions="Center" />
+
+            <SearchBar 
+                x:Name="SearchBar"
+                Placeholder="Поиск пользователей"
+                TextChanged="OnSearchTextChanged"/>
+        </VerticalStackLayout>
+
+        <!-- Фильтр по ролям -->
+        <ScrollView Grid.Row="1" Margin="0,10" Orientation="Horizontal">
+            <HorizontalStackLayout x:Name="RoleFilters" Spacing="10">
+                <Button 
+                    Text="Все"
+                    StyleClass="RoleFilter"
+                    Clicked="OnRoleFilterClicked"
+                    CommandParameter=""
+                    BackgroundColor="{StaticResource Primary}"/>
+                <Button 
+                    Text="Преподаватели"
+                    StyleClass="RoleFilter"
+                    Clicked="OnRoleFilterClicked"
+                    CommandParameter="Teacher"
+                    BackgroundColor="{StaticResource Secondary}"/>
+                <Button 
+                    Text="Студенты"
+                    StyleClass="RoleFilter"
+                    Clicked="OnRoleFilterClicked"
+                    CommandParameter="Student"
+                    BackgroundColor="{StaticResource Tertiary}"/>
+                <Button 
+                    Text="Родители"
+                    StyleClass="RoleFilter"
+                    Clicked="OnRoleFilterClicked"
+                    CommandParameter="Parent"
+                    BackgroundColor="{StaticResource Gray500}"/>
+            </HorizontalStackLayout>
+        </ScrollView>
+
+        <RefreshView 
+            Grid.Row="2" 
+            x:Name="UsersRefreshView"
+            Command="{Binding RefreshCommand}">
+            <CollectionView 
+                x:Name="UsersCollection"
+                SelectionMode="Single"
+                SelectionChanged="OnUserSelected">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Frame Margin="0,5" Padding="10">
+                            <Grid ColumnDefinitions="Auto,*,Auto">
+                                <Frame 
+                                    Grid.Column="0"
+                                    HeightRequest="40"
+                                    WidthRequest="40"
+                                    CornerRadius="20"
+                                    BackgroundColor="{Binding RoleColor}">
+                                    <Label 
+                                        Text="{Binding Initials}"
+                                        HorizontalOptions="Center"
+                                        VerticalOptions="Center"
+                                        TextColor="White"/>
+                                </Frame>
+
+                                <VerticalStackLayout Grid.Column="1" Padding="10,0">
+                                    <Label 
+                                        Text="{Binding FullName}"
+                                        FontAttributes="Bold"/>
+                                    <Label 
+                                        Text="{Binding Role}"
+                                        FontSize="Small"
+                                        TextColor="Gray"/>
+                                    <Label 
+                                        Text="{Binding StudentGroup}"
+                                        FontSize="Small"
+                                        TextColor="Gray"
+                                        IsVisible="{Binding StudentGroup, Converter={StaticResource StringNotEmptyConverter}}"/>
+                                </VerticalStackLayout>
+
+                                <Label 
+                                    Grid.Column="2"
+                                    Text="{Binding Email}"
+                                    FontSize="Small"
+                                    TextColor="Gray"
+                                    VerticalOptions="Center"/>
+                            </Grid>
+                        </Frame>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+                <CollectionView.EmptyView>
+                    <VerticalStackLayout>
+                        <Label 
+                            Text="Нет доступных пользователей"
+                            HorizontalOptions="Center"
+                            VerticalOptions="Center"
+                            TextColor="Gray"/>
+                    </VerticalStackLayout>
+                </CollectionView.EmptyView>
+            </CollectionView>
+        </RefreshView>
+
+        <ActivityIndicator 
+            Grid.Row="2"
+            x:Name="LoadingIndicator"
+            IsRunning="False"
+            IsVisible="False"
+            HorizontalOptions="Center"
+            VerticalOptions="Center"/>
+    </Grid>
+</ContentPage>

@@ -3,16 +3,75 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="FrontEdu.Views.ProfilePage"
              Title="Профиль">
-    <VerticalStackLayout Spacing="20" Padding="20">
-        <Label 
-            Text="Профиль"
-            SemanticProperties.HeadingLevel="Level1"
-            FontSize="32"
-            HorizontalOptions="Center" />
+    <ScrollView>
+        <VerticalStackLayout Spacing="20" Padding="20">
+            <Label 
+                Text="Профиль пользователя"
+                SemanticProperties.HeadingLevel="Level1"
+                FontSize="32"
+                HorizontalOptions="Center" />
 
-        <Button 
-            Text="Вернуться на главную"
-            Clicked="OnBackToMainClicked"
-            HorizontalOptions="Center"/>
-    </VerticalStackLayout>
+            <Frame BorderColor="Gray" Padding="20">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Основная информация" FontSize="20" FontAttributes="Bold"/>
+                    
+                    <Entry x:Name="FullNameEntry"
+                           Placeholder="ФИО"
+                           Text="{Binding FullName}"/>
+                    
+                    <Label Text="{Binding Email}"
+                           FontSize="16"/>
+                    
+                    <Label Text="{Binding Role, StringFormat='Роль: {0}'}"
+                           FontSize="16"/>
+
+                    <Entry x:Name="PhoneEntry"
+                           Placeholder="Телефон"
+                           Text="{Binding PhoneNumber}"
+                           Keyboard="Telephone"/>
+
+                    <Entry x:Name="AddressEntry"
+                           Placeholder="Адрес"
+                           Text="{Binding Address}"/>
+
+                    <Entry x:Name="SocialStatusEntry"
+                           Placeholder="Социальный статус"
+                           Text="{Binding SocialStatus}"/>
+
+                    <Label x:Name="StudentGroupLabel"
+                           Text="{Binding StudentGroup, StringFormat='Группа: {0}'}"
+                           IsVisible="{Binding IsStudent}"
+                           FontSize="16"/>
+
+                    <Label x:Name="StudentIdLabel"
+                           Text="{Binding StudentId, StringFormat='Студенческий билет: {0}'}"
+                           IsVisible="{Binding IsStudent}"
+                           FontSize="16"/>
+                </VerticalStackLayout>
+            </Frame>
+
+            <Button 
+                x:Name="SaveButton"
+                Text="Сохранить изменения"
+                Clicked="OnSaveClicked"
+                HorizontalOptions="Fill"/>
+
+            <ActivityIndicator 
+                x:Name="LoadingIndicator"
+                IsRunning="False"
+                IsVisible="False"
+                HorizontalOptions="Center"/>
+
+            <Label 
+                x:Name="ErrorLabel"
+                TextColor="Red"
+                IsVisible="False"
+                HorizontalOptions="Center"/>
+
+            <Button 
+                Text="Вернуться на главную"
+                Clicked="OnBackToMainClicked"
+                HorizontalOptions="Center"/>
+        </VerticalStackLayout>
+    </ScrollView>
 </ContentPage>

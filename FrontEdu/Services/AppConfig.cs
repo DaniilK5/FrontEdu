@@ -9,7 +9,20 @@ namespace FrontEdu.Services
 {
     public static class AppConfig
     {
-        public static string ApiBaseUrl { get; set; } = "http://localhost:5105";
+        public static string ApiBaseUrl
+        {
+            get
+            {
+#if DEBUG
+                if (DeviceInfo.Platform == DevicePlatform.Android)
+                    return "http://10.0.2.2:5105"; // Специальный IP для Android эмулятора
+                return "http://localhost:5105";
+#else
+                return "https://your-production-api-url/";
+#endif
+            }
+            set { }
+        }
         private static HttpClient? _httpClient;
         private const string AUTH_TOKEN_KEY = "auth_token";
         // Добавьте метод проверки токена
@@ -36,26 +49,36 @@ namespace FrontEdu.Services
             if (_httpClient != null)
                 return _httpClient;
 
-            _httpClient = new HttpClient
-            {
-                BaseAddress = new Uri(ApiBaseUrl.TrimEnd('/')),
-                Timeout = TimeSpan.FromSeconds(30)
-            };
-
+            var handler = new HttpClientHandler();
 #if DEBUG
-            var handler = new HttpClientHandler
-            {
-                ServerCertificateCustomValidationCallback = 
-                    (message, cert, chain, sslPolicyErrors) => true
-            };
-            _httpClient = new HttpClient(handler)
-            {
-                BaseAddress = new Uri(ApiBaseUrl.TrimEnd('/')),
-                Timeout = TimeSpan.FromSeconds(30)
-            };
+            handler.ServerCertificateCustomValidationCallback = 
+                (message, cert, chain, sslPolicyErrors) => true;
 #endif
 
-            // Получаем токен если есть
+            _httpClient = new HttpClient(handler)
+            {
+                BaseAddress = new Uri(ApiBaseUrl),
+                Timeout = TimeSpan.FromSeconds(30) // Увеличиваем таймаут
+            };
+
+            try
+            {
+                // Проверяем доступность сервера
+                using var response = await _httpClient.GetAsync("api/health");
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new Exception("API server is not available");
+                }
+            }
+            catch (Exception)
+            {
+                // Если не удалось подключиться, пробуем альтернативный URL
+                if (DeviceInfo.Platform == DevicePlatform.Android)
+                {
+                    _httpClient.BaseAddress = new Uri("http://10.0.2.2:5105");
+                }
+            }
+
             var token = await SecureStorage.GetAsync("auth_token");
             if (!string.IsNullOrEmpty(token))
             {

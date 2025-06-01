@@ -23,6 +23,9 @@ namespace FrontEdu
             Routing.RegisterRoute("ProfilePage", typeof(ProfilePage));
             Routing.RegisterRoute("SettingsPage", typeof(SettingsPage));
             Routing.RegisterRoute("UsersPage", typeof(UsersPage));
+            Routing.RegisterRoute("ChatPage", typeof(ChatPage));
+            Routing.RegisterRoute("GroupChatsPage", typeof(GroupChatsPage));
+            Routing.RegisterRoute("DirectChatPage", typeof(DirectChatPage));
         }
 
         private async void SetupMenu()
