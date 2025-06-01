@@ -23,7 +23,7 @@
     </FlyoutItem>
 
     <!-- Курсы -->
-    <FlyoutItem Title="Курсы" Icon="book.png">
+    <FlyoutItem Title="Курсы">
         <ShellContent
             Title="Курсы"
             ContentTemplate="{DataTemplate views:CoursesPage}"
@@ -31,7 +31,7 @@
     </FlyoutItem>
 
     <!-- Задания        -->
-    <FlyoutItem Title="Задания" Icon="assignment.png">
+    <FlyoutItem Title="Задания">
         <ShellContent
             Title="Задания"
             ContentTemplate="{DataTemplate views:AssignmentsPage}"
@@ -75,14 +75,19 @@
         ContentTemplate="{DataTemplate views:RegisterPage}"
         Route="Register" />
 
-    <!-- Добавьте перед закрывающим тегом Shell -->
+    <!-- Добавьте перед закрывающим тегом Shell        -->
     <ShellContent
         Title="Личные сообщения"
         ContentTemplate="{DataTemplate views:ChatPage}"
-        Route="ChatPage" />
+        Route="ChatPage" />      
 
     <ShellContent
         Title="Групповые чаты"
         ContentTemplate="{DataTemplate views:GroupChatsPage}"
         Route="GroupChatsPage" />
+    <!-- Добавьте перед закрывающим тегом Shell       
+    <ShellContent
+        Route="chat"
+        ContentTemplate="{DataTemplate views:ChatPage}"
+        Title="Чаты" />             -->
 </Shell>

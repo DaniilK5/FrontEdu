@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Net.Http.Headers;
+using System.Diagnostics;
 
 namespace FrontEdu.Services
 {
@@ -46,50 +47,48 @@ namespace FrontEdu.Services
         }
         public static async Task<HttpClient> CreateHttpClientAsync()
         {
-            if (_httpClient != null)
-                return _httpClient;
-
-            var handler = new HttpClientHandler();
-#if DEBUG
-            handler.ServerCertificateCustomValidationCallback = 
-                (message, cert, chain, sslPolicyErrors) => true;
-#endif
-
-            _httpClient = new HttpClient(handler)
-            {
-                BaseAddress = new Uri(ApiBaseUrl),
-                Timeout = TimeSpan.FromSeconds(30) // Увеличиваем таймаут
-            };
-
             try
             {
-                // Проверяем доступность сервера
-                using var response = await _httpClient.GetAsync("api/health");
-                if (!response.IsSuccessStatusCode)
+                if (_httpClient == null)
                 {
-                    throw new Exception("API server is not available");
+                    var handler = new HttpClientHandler();
+#if DEBUG
+                    handler.ServerCertificateCustomValidationCallback = 
+                        (message, cert, chain, sslPolicyErrors) => true;
+#endif
+                    _httpClient = new HttpClient(handler)
+                    {
+                        BaseAddress = new Uri(ApiBaseUrl),
+                        Timeout = TimeSpan.FromSeconds(30)
+                    };
                 }
-            }
-            catch (Exception)
-            {
-                // Если не удалось подключиться, пробуем альтернативный URL
-                if (DeviceInfo.Platform == DevicePlatform.Android)
+
+                // Всегда обновляем токен при создании или получении клиента
+                var token = await SecureStorage.GetAsync(AUTH_TOKEN_KEY);
+                Debug.WriteLine($"Current token: {token?.Substring(0, Math.Min(token?.Length ?? 0, 20))}...");
+
+                if (!string.IsNullOrEmpty(token))
                 {
-                    _httpClient.BaseAddress = new Uri("http://10.0.2.2:5105");
+                    _httpClient.DefaultRequestHeaders.Authorization = 
+                        new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
                 }
-            }
+                else
+                {
+                    Debug.WriteLine("No token found in SecureStorage");
+                    _httpClient.DefaultRequestHeaders.Authorization = null;
+                }
 
-            var token = await SecureStorage.GetAsync("auth_token");
-            if (!string.IsNullOrEmpty(token))
+                _httpClient.DefaultRequestHeaders.Accept.Clear();
+                _httpClient.DefaultRequestHeaders.Accept.Add(
+                    new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+
+                return _httpClient;
+            }
+            catch (Exception ex)
             {
-                _httpClient.DefaultRequestHeaders.Authorization =
-                    new AuthenticationHeaderValue("Bearer", token);
+                Debug.WriteLine($"Error creating HttpClient: {ex}");
+                throw;
             }
-
-            _httpClient.DefaultRequestHeaders.Accept.Add(
-                new MediaTypeWithQualityHeaderValue("application/json"));
-
-            return _httpClient;
         }
 
         public static void ResetHttpClient()

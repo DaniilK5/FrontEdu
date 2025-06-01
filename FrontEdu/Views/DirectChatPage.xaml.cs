@@ -23,11 +23,23 @@ namespace FrontEdu.Views
             get => _userId;
             set
             {
-                _userId = value;
-                MainThread.BeginInvokeOnMainThread(async () =>
+                if (_userId != value)
                 {
-                    await LoadInitialMessages();
-                });
+                    _userId = value;
+                    Debug.WriteLine($"UserId set to: {value}");
+                    MainThread.BeginInvokeOnMainThread(async () =>
+                    {
+                        try
+                        {
+                            await LoadInitialMessages();
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.WriteLine($"Error loading messages: {ex}");
+                            await DisplayAlert("Ошибка", "Не удалось загрузить сообщения", "OK");
+                        }
+                    });
+                }
             }
         }
 
@@ -44,10 +56,15 @@ namespace FrontEdu.Views
             try
             {
                 _httpClient = await AppConfig.CreateHttpClientAsync();
+                Debug.WriteLine("HttpClient initialized in DirectChatPage");
             }
             catch (Exception ex)
             {
-                await DisplayAlert("Ошибка", "Не удалось инициализировать подключение", "OK");
+                Debug.WriteLine($"Connection initialization error: {ex}");
+                await MainThread.InvokeOnMainThreadAsync(async () =>
+                {
+                    await DisplayAlert("Ошибка", "Не удалось инициализировать подключение", "OK");
+                });
             }
         }
 
@@ -75,44 +92,61 @@ namespace FrontEdu.Views
         }
         private async Task LoadMessages()
         {
+            if (_httpClient == null)
+            {
+                _httpClient = await AppConfig.CreateHttpClientAsync();
+            }
+
             try
             {
                 _isLoading = true;
                 var response = await _httpClient.GetAsync(
                     $"api/Message/direct/{UserId}?page={_currentPage}&pageSize={PageSize}");
 
+                Debug.WriteLine($"Загрузка сообщений: {response.StatusCode}");
+                var responseContent = await response.Content.ReadAsStringAsync();
+                Debug.WriteLine($"Содержимое ответа: {responseContent}");
+
                 if (response.IsSuccessStatusCode)
                 {
                     var messages = await response.Content.ReadFromJsonAsync<List<MessageDto>>();
                     if (messages != null && messages.Any())
                     {
-                        foreach (var message in messages)
+                        await MainThread.InvokeOnMainThreadAsync(async () =>
                         {
-                            // Получаем ID текущего пользователя из токена
-                            var token = await SecureStorage.GetAsync("auth_token");
-                            if (!string.IsNullOrEmpty(token))
+                            foreach (var message in messages)
                             {
-                                var handler = new JwtSecurityTokenHandler();
-                                var jsonToken = handler.ReadToken(token) as JwtSecurityToken;
-                                var currentUserId = int.Parse(jsonToken?.Claims.FirstOrDefault(c => 
-                                    c.Type.Contains("nameidentifier"))?.Value ?? "0");
-                                
-                                message.IsFromCurrentUser = message.Sender.Id == currentUserId;
+                                var token = await SecureStorage.GetAsync("auth_token");
+                                if (!string.IsNullOrEmpty(token))
+                                {
+                                    var handler = new JwtSecurityTokenHandler();
+                                    var jsonToken = handler.ReadToken(token) as JwtSecurityToken;
+                                    var currentUserId = int.Parse(jsonToken?.Claims.FirstOrDefault(c => 
+                                        c.Type.Contains("nameidentifier"))?.Value ?? "0");
+                                    
+                                    message.IsFromCurrentUser = message.Sender.Id == currentUserId;
+                                }
+                                Messages.Add(message);
                             }
-                            Messages.Add(message);
-                        }
+                        });
                     }
                 }
                 else
                 {
-                    var error = await response.Content.ReadAsStringAsync();
-                    await DisplayAlert("Ошибка", error, "OK");
+                    await MainThread.InvokeOnMainThreadAsync(async () =>
+                    {
+                        await DisplayAlert("Ошибка", responseContent, "OK");
+                    });
                 }
             }
             catch (Exception ex)
             {
-                await DisplayAlert("Ошибка", "Не удалось загрузить сообщения", "OK");
-                Debug.WriteLine($"Load messages error: {ex}");
+                Debug.WriteLine($"Ошибка загрузки сообщений: {ex}");
+                await MainThread.InvokeOnMainThreadAsync(async () =>
+                {
+                    await DisplayAlert("Ошибка", 
+                        $"Не удалось загрузить сообщения: {ex.Message}", "OK");
+                });
             }
             finally
             {

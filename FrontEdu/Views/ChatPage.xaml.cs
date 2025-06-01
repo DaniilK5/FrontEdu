@@ -1,7 +1,9 @@
 using FrontEdu.Models.Chat;
 using FrontEdu.Services;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Net.Http.Json;
+using System.Runtime.Versioning;
 
 namespace FrontEdu.Views
 {
@@ -24,6 +26,16 @@ namespace FrontEdu.Views
             try
             {
                 LoadingIndicator.IsVisible = true;
+
+                // Проверяем наличие токена
+                var token = await SecureStorage.GetAsync("auth_token");
+                if (string.IsNullOrEmpty(token))
+                {
+                    Debug.WriteLine("Token not found, redirecting to login");
+                    await Shell.Current.GoToAsync("//Login");
+                    return;
+                }
+
                 _httpClient = await AppConfig.CreateHttpClientAsync();
                 _users = new ObservableCollection<ChatUserDto>();
                 UsersCollection.ItemsSource = _users;
@@ -34,6 +46,7 @@ namespace FrontEdu.Views
             }
             catch (Exception ex)
             {
+                Debug.WriteLine($"Initialize error: {ex}");
                 await DisplayAlert("Ошибка", "Не удалось загрузить список пользователей", "OK");
             }
             finally
@@ -41,6 +54,7 @@ namespace FrontEdu.Views
                 LoadingIndicator.IsVisible = false;
             }
         }
+
         private async Task LoadUsers()
         {
             if (_isLoading) return;
@@ -50,44 +64,101 @@ namespace FrontEdu.Views
                 _isLoading = true;
                 LoadingIndicator.IsVisible = true;
 
+                // Пересоздаем HttpClient для обновления токена
+                _httpClient = await AppConfig.CreateHttpClientAsync();
+
                 var queryParams = new List<string>();
                 if (!string.IsNullOrEmpty(_searchQuery))
                     queryParams.Add($"search={Uri.EscapeDataString(_searchQuery)}");
                 if (!string.IsNullOrEmpty(_selectedRole))
                     queryParams.Add($"role={Uri.EscapeDataString(_selectedRole)}");
 
-                var url = "api/message/users" + (queryParams.Any() ? "?" + string.Join("&", queryParams) : "");
+                var url = "api/Message/users" + (queryParams.Any() ? "?" + string.Join("&", queryParams) : "");
+                
+                Debug.WriteLine($"Запрос к API: {url}");
                 var response = await _httpClient.GetAsync(url);
+                
+                Debug.WriteLine($"Код ответа: {response.StatusCode}");
+                var responseContent = await response.Content.ReadAsStringAsync();
+                Debug.WriteLine($"Содержимое ответа: {responseContent}");
+
+                if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                {
+                    Debug.WriteLine("Unauthorized, redirecting to login");
+                    await MainThread.InvokeOnMainThreadAsync(async () =>
+                    {
+                        await Shell.Current.GoToAsync("//Login");
+                    });
+                    return;
+                }
 
                 if (response.IsSuccessStatusCode)
                 {
                     var users = await response.Content.ReadFromJsonAsync<List<ChatUserDto>>();
-                    _users.Clear();
-                    if (users != null)
+                    
+                    [SupportedOSPlatform("Windows"), SupportedOSPlatform("Android"), 
+                     SupportedOSPlatform("iOS"), SupportedOSPlatform("MacCatalyst")]
+                    async Task UpdateUI()
                     {
-                        foreach (var user in users)
+                        await MainThread.InvokeOnMainThreadAsync(() =>
                         {
-                            _users.Add(user);
-                        }
+                            _users.Clear();
+                            if (users != null)
+                            {
+                                foreach (var user in users)
+                                {
+                                    _users.Add(user);
+                                }
+                            }
+                            return Task.CompletedTask;
+                        });
                     }
+
+                    await UpdateUI();
                 }
                 else
                 {
-                    var error = await response.Content.ReadAsStringAsync();
-                    await DisplayAlert("Ошибка", error, "OK");
+                    [SupportedOSPlatform("Windows"), SupportedOSPlatform("Android")]
+                    async Task ShowError()
+                    {
+                        await MainThread.InvokeOnMainThreadAsync(async () =>
+                        {
+                            await DisplayAlert("Ошибка", responseContent, "OK");
+                        });
+                    }
+
+                    await ShowError();
                 }
             }
             catch (Exception ex)
             {
-                await DisplayAlert("Ошибка", "Не удалось загрузить пользователей", "OK");
+                Debug.WriteLine($"Ошибка загрузки пользователей: {ex}");
+                
+                [SupportedOSPlatform("Windows"), SupportedOSPlatform("Android"), 
+                 SupportedOSPlatform("iOS"), SupportedOSPlatform("MacCatalyst")]
+                async Task ShowError()
+                {
+                    await MainThread.InvokeOnMainThreadAsync(async () =>
+                    {
+                        await DisplayAlert("Ошибка", 
+                            $"Не удалось загрузить пользователей: {ex.Message}", "OK");
+                    });
+                }
+
+                await ShowError();
             }
             finally
             {
-                LoadingIndicator.IsVisible = false;
                 _isLoading = false;
-                UsersRefreshView.IsRefreshing = false;
+                await MainThread.InvokeOnMainThreadAsync(() =>
+                {
+                    LoadingIndicator.IsVisible = false;
+                    UsersRefreshView.IsRefreshing = false;
+                    return Task.CompletedTask;
+                });
             }
         }
+
         private async void OnSearchTextChanged(object sender, TextChangedEventArgs e)
         {
             _searchQuery = e.NewTextValue ?? string.Empty;
@@ -115,12 +186,28 @@ namespace FrontEdu.Views
                 await LoadUsers();
             }
         }
+
         private async void OnUserSelected(object sender, SelectionChangedEventArgs e)
         {
             if (e.CurrentSelection.FirstOrDefault() is ChatUserDto selectedUser)
             {
-                UsersCollection.SelectedItem = null;
-                await Shell.Current.GoToAsync($"DirectChatPage?userId={selectedUser.Id}");
+                try
+                {
+                    UsersCollection.SelectedItem = null;
+                    Debug.WriteLine($"Navigating to chat with user ID: {selectedUser.Id}");
+                    
+                    var navigationParameter = new Dictionary<string, object>
+                    {
+                        { "userId", selectedUser.Id }
+                    };
+
+                    await Shell.Current.GoToAsync("DirectChatPage", navigationParameter);
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Navigation error: {ex}");
+                    await DisplayAlert("Ошибка", "Не удалось открыть чат", "OK");
+                }
             }
         }
 
