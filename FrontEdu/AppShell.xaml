@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell
+    x:Class="FrontEdu.AppShell"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:local="clr-namespace:FrontEdu"
+    xmlns:views="clr-namespace:FrontEdu.Views"
+    Title="FrontEdu">
+
+    <Shell.FlyoutBehavior>
+        <OnPlatform x:TypeArguments="FlyoutBehavior">
+            <On Platform="Android" Value="Flyout"/>
+            <On Platform="Windows" Value="Locked"/>
+        </OnPlatform>
+    </Shell.FlyoutBehavior>
+
+    <!-- Главное меню -->
+    <FlyoutItem Title="Главная">
+        <ShellContent
+            Title="Главная"
+            ContentTemplate="{DataTemplate views:MainPage}"
+            Route="MainPage" />
+    </FlyoutItem>
+
+    <!-- Курсы -->
+    <FlyoutItem Title="Курсы" Icon="book.png">
+        <ShellContent
+            Title="Курсы"
+            ContentTemplate="{DataTemplate views:CoursesPage}"
+            Route="CoursesPage" />
+    </FlyoutItem>
+
+    <!-- Задания 
+    <FlyoutItem Title="Задания" Icon="assignment.png">
+        <ShellContent
+            Title="Задания"
+            ContentTemplate="{DataTemplate views:AssignmentsPage}"
+            Route="AssignmentsPage" />
+    </FlyoutItem>     -->
+
+    <!-- Профиль 
+    <FlyoutItem Title="Профиль" >
+        <ShellContent
+            Title="Профиль"
+            ContentTemplate="{DataTemplate views:ProfilePage}"
+            Route="ProfilePage" />
+    </FlyoutItem>   -->
+
+    <!-- Меню администратора
+    <FlyoutItem Title="Управление" >
+        <ShellContent
+            Title="Пользователи"
+            ContentTemplate="{DataTemplate views:UsersPage}"
+            Route="UsersPage" />
+    </FlyoutItem> -->
+
+    <!-- Нижнее меню 
+    <TabBar>
+        <Tab Title="Настройки" >
+            <ShellContent
+                Title="Настройки"
+                ContentTemplate="{DataTemplate views:SettingsPage}"
+                Route="SettingsPage" />
+        </Tab>
+    </TabBar>       -->
+
+    <!-- Регистрация маршрутов для неавторизованных пользователей -->
+    <ShellContent
+        Title="Вход"
+        ContentTemplate="{DataTemplate views:LoginPage}"
+        Route="Login" />
+
+    <ShellContent
+        Title="Регистрация"
+        ContentTemplate="{DataTemplate views:RegisterPage}"
+        Route="Register" />
+</Shell>

@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="FrontEdu.Views.MainPage"
+             Title="Главная">
+    
+    <ScrollView>
+        <VerticalStackLayout Spacing="25" Padding="20">
+            <Label 
+                Text="Добро пожаловать!"
+                SemanticProperties.HeadingLevel="Level1"
+                FontSize="32"
+                HorizontalOptions="Center" />
+
+            <!-- Секция для преподавателей и студентов -->
+            <Frame Padding="15" BorderColor="Gray">
+                <VerticalStackLayout Spacing="15">
+                    <Label 
+                        Text="Обучение"
+                        FontSize="24"
+                        HorizontalOptions="Center"/>
+                    
+                    <Button 
+                        x:Name="CoursesButton"
+                        Text="Курсы"
+                        Clicked="OnCoursesClicked"
+                        HorizontalOptions="Fill"/>
+                    
+                    <Button 
+                        x:Name="AssignmentsButton"
+                        Text="Задания"
+                        Clicked="OnAssignmentsClicked"
+                        HorizontalOptions="Fill"/>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Секция профиля -->
+            <Frame Padding="15" BorderColor="Gray">
+                <VerticalStackLayout Spacing="15">
+                    <Label 
+                        Text="Профиль"
+                        FontSize="24"
+                        HorizontalOptions="Center"/>
+                    
+                    <Button 
+                        x:Name="ProfileButton"
+                        Text="Мой профиль"
+                        Clicked="OnProfileClicked"
+                        HorizontalOptions="Fill"/>
+                    
+                    <Button 
+                        x:Name="SettingsButton"
+                        Text="Настройки"
+                        Clicked="OnSettingsClicked"
+                        HorizontalOptions="Fill"/>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Секция администратора -->
+            <Frame x:Name="AdminSection" Padding="15" BorderColor="Gray" IsVisible="False">
+                <VerticalStackLayout Spacing="15">
+                    <Label 
+                        Text="Администрирование"
+                        FontSize="24"
+                        HorizontalOptions="Center"/>
+                    
+                    <Button 
+                        x:Name="UsersButton"
+                        Text="Пользователи"
+                        Clicked="OnUsersClicked"
+                        HorizontalOptions="Fill"/>
+                </VerticalStackLayout>
+            </Frame>
+
+            <Button 
+                Text="Выйти"
+                Clicked="OnLogoutClicked"
+                BackgroundColor="Red"
+                TextColor="White"
+                HorizontalOptions="Fill"/>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

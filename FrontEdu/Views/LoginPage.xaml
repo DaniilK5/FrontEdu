@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="FrontEdu.Views.LoginPage"
+             Title="LoginPage">
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="15" VerticalOptions="Center">
+            <Image Source="educontrol_logo.png"
+               HeightRequest="100"
+               HorizontalOptions="Center"/>
+
+            <Label Text="Вход в EduControl"
+               FontSize="24"
+               HorizontalOptions="Center"/>
+
+            <Entry x:Name="EmailEntry"
+               Placeholder="Email"
+               Keyboard="Email"/>
+
+            <Entry x:Name="PasswordEntry"
+               Placeholder="Пароль"
+               IsPassword="True"/>
+
+            <Button x:Name="LoginButton"
+                Text="Войти"
+                Clicked="OnLoginClicked"
+                HorizontalOptions="Fill"/>
+
+            <Button x:Name="RegisterButton"
+                Text="Регистрация"
+                Clicked="OnRegisterClicked"
+                Style="{StaticResource TextButton}"
+                HorizontalOptions="Center"/>
+
+            <ActivityIndicator x:Name="LoadingIndicator"
+                         IsRunning="False"
+                         IsVisible="False"/>
+
+            <Label x:Name="ErrorLabel"
+               TextColor="Red"
+               IsVisible="False"/>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
