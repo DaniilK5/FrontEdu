@@ -10,10 +10,10 @@ namespace FrontEdu.Models.Chat
     public class MessageDto : INotifyPropertyChanged
     {
         private string _content;
-        
+
         public int Id { get; set; }
-        public string Content 
-        { 
+        public string Content
+        {
             get => _content;
             set
             {

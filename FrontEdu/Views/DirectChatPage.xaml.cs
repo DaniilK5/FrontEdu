@@ -73,7 +73,6 @@ namespace FrontEdu.Views
                 await LoadMessages();
             }
         }
-
         private async Task LoadMessages()
         {
             try
@@ -95,9 +94,9 @@ namespace FrontEdu.Views
                             {
                                 var handler = new JwtSecurityTokenHandler();
                                 var jsonToken = handler.ReadToken(token) as JwtSecurityToken;
-                                var currentUserId = int.Parse(jsonToken?.Claims.FirstOrDefault(c =>
+                                var currentUserId = int.Parse(jsonToken?.Claims.FirstOrDefault(c => 
                                     c.Type.Contains("nameidentifier"))?.Value ?? "0");
-
+                                
                                 message.IsFromCurrentUser = message.Sender.Id == currentUserId;
                             }
                             Messages.Add(message);
@@ -164,7 +163,7 @@ namespace FrontEdu.Views
                     var streamContent = new StreamContent(await file.OpenReadAsync());
                     content.Add(streamContent, "Attachment", file.FileName);
                     content.Add(new StringContent(UserId.ToString()), "ReceiverId");
-                    
+
                     if (!string.IsNullOrWhiteSpace(MessageEntry.Text))
                     {
                         content.Add(new StringContent(MessageEntry.Text), "Content");
@@ -188,7 +187,6 @@ namespace FrontEdu.Views
                 await DisplayAlert("Ошибка", "Не удалось отправить файл", "OK");
             }
         }
-
         private async void OnAttachmentClicked(object sender, EventArgs e)
         {
             if (sender is Button button && button.CommandParameter is int messageId)
@@ -198,11 +196,11 @@ namespace FrontEdu.Views
                     var response = await _httpClient.GetAsync($"api/Message/file/{messageId}");
                     if (response.IsSuccessStatusCode)
                     {
-                        var fileName = response.Content.Headers.ContentDisposition?.FileName 
+                        var fileName = response.Content.Headers.ContentDisposition?.FileName
                             ?? "attachment";
                         var bytes = await response.Content.ReadAsByteArrayAsync();
                         var filePath = Path.Combine(FileSystem.CacheDirectory, fileName);
-                        
+
                         await File.WriteAllBytesAsync(filePath, bytes);
                         await Launcher.OpenAsync(new OpenFileRequest
                         {
@@ -220,7 +218,6 @@ namespace FrontEdu.Views
                 }
             }
         }
-
 
         private void OnEditMessageClicked(object sender, EventArgs e)
         {

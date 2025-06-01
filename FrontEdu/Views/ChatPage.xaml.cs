@@ -27,9 +27,9 @@ namespace FrontEdu.Views
                 _httpClient = await AppConfig.CreateHttpClientAsync();
                 _users = new ObservableCollection<ChatUserDto>();
                 UsersCollection.ItemsSource = _users;
-                
+
                 UsersRefreshView.Command = new Command(async () => await RefreshUsers());
-                
+
                 await LoadUsers();
             }
             catch (Exception ex)
@@ -41,11 +41,10 @@ namespace FrontEdu.Views
                 LoadingIndicator.IsVisible = false;
             }
         }
-
         private async Task LoadUsers()
         {
             if (_isLoading) return;
-            
+
             try
             {
                 _isLoading = true;
@@ -89,7 +88,6 @@ namespace FrontEdu.Views
                 UsersRefreshView.IsRefreshing = false;
             }
         }
-
         private async void OnSearchTextChanged(object sender, TextChangedEventArgs e)
         {
             _searchQuery = e.NewTextValue ?? string.Empty;
@@ -101,23 +99,22 @@ namespace FrontEdu.Views
             if (sender is Button button)
             {
                 _selectedRole = button.CommandParameter?.ToString() ?? string.Empty;
-                
+
                 // Обновляем внешний вид кнопок
                 foreach (var child in RoleFilters.Children)
                 {
                     if (child is Button roleButton)
                     {
-                        roleButton.BackgroundColor = 
-                            roleButton == button ? 
-                            Application.Current.Resources["Primary"] as Color ?? Colors.Blue : 
+                        roleButton.BackgroundColor =
+                            roleButton == button ?
+                            Application.Current.Resources["Primary"] as Color ?? Colors.Blue :
                             Application.Current.Resources["Gray500"] as Color ?? Colors.Gray;
                     }
                 }
-                
+
                 await LoadUsers();
             }
         }
-
         private async void OnUserSelected(object sender, SelectionChangedEventArgs e)
         {
             if (e.CurrentSelection.FirstOrDefault() is ChatUserDto selectedUser)
