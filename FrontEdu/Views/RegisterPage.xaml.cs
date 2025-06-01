@@ -3,6 +3,7 @@ using FrontEdu.Models.Common;
 using FrontEdu.Models.Constants;
 using FrontEdu.Services;
 using System.Net.Http.Json;
+using System.Diagnostics;
 
 namespace FrontEdu.Views;
 
@@ -39,18 +40,15 @@ public partial class RegisterPage : ContentPage
 
     private async void OnRegisterClicked(object sender, EventArgs e)
     {
-        if (_httpClient == null)
+        // Валидация полей
+        if (string.IsNullOrWhiteSpace(FullNameEntry.Text) ||
+            string.IsNullOrWhiteSpace(EmailEntry.Text) ||
+            string.IsNullOrWhiteSpace(PasswordEntry.Text) ||
+            RolePicker.SelectedItem == null)
         {
-            try
-            {
-                _httpClient = await AppConfig.CreateHttpClientAsync();
-            }
-            catch (Exception)
-            {
-                ErrorLabel.Text = "Ошибка подключения к серверу";
-                ErrorLabel.IsVisible = true;
-                return;
-            }
+            ErrorLabel.Text = "Пожалуйста, заполните все обязательные поля";
+            ErrorLabel.IsVisible = true;
+            return;
         }
 
         try
@@ -59,59 +57,62 @@ public partial class RegisterPage : ContentPage
             LoadingIndicator.IsVisible = true;
             RegisterButton.IsEnabled = false;
 
-            // Валидация полей
-            if (string.IsNullOrWhiteSpace(FullNameEntry.Text) ||
-                string.IsNullOrWhiteSpace(EmailEntry.Text) ||
-                string.IsNullOrWhiteSpace(PasswordEntry.Text) ||
-                RolePicker.SelectedItem == null)
-            {
-                ErrorLabel.Text = "Пожалуйста, заполните все обязательные поля";
-                ErrorLabel.IsVisible = true;
-                return;
-            }
-
             var registerRequest = new RegisterRequest
             {
-                FullName = FullNameEntry.Text.Trim(),
-                Email = EmailEntry.Text.Trim(),
+                FullName = FullNameEntry.Text?.Trim(),
+                Email = EmailEntry.Text?.Trim(),
                 Password = PasswordEntry.Text,
                 Role = RolePicker.SelectedItem?.ToString(),
                 StudentGroup = StudentGroupEntry.IsVisible ? StudentGroupEntry.Text?.Trim() : null,
                 ChildrenIds = null // Пока не реализуем выбор детей для родителей
             };
 
+            _httpClient = await AppConfig.CreateHttpClientAsync();
             var response = await _httpClient.PostAsJsonAsync("api/Auth/register", registerRequest);
             var responseContent = await response.Content.ReadAsStringAsync();
+            Debug.WriteLine($"Response Status: {response.StatusCode}");
+            Debug.WriteLine($"Response Content: {responseContent}");
 
             if (response.IsSuccessStatusCode)
             {
-                var apiResponse = await response.Content.ReadFromJsonAsync<ApiResponse<string>>();
-
-                if (apiResponse?.Success == true)
+                // Просто проверяем успешность по StatusCode
+                await DisplayAlert("Успех", "Регистрация выполнена успешно", "OK");
+                
+                // После успешной регистрации возвращаемся на страницу входа
+                await MainThread.InvokeOnMainThreadAsync(async () =>
                 {
-                    await DisplayAlert("Успех", "Регистрация выполнена успешно", "OK");
                     await Navigation.PopAsync();
-                }
-                else
-                {
-                    ErrorLabel.Text = apiResponse?.Message ?? "Ошибка при регистрации";
-                    ErrorLabel.IsVisible = true;
-                }
+                });
+                return;
             }
             else
             {
-                ErrorLabel.Text = $"Ошибка сервера: {response.StatusCode}\n{responseContent}";
+                try
+                {
+                    // Пробуем получить сообщение об ошибке из ответа
+                    var errorResponse = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
+                    ErrorLabel.Text = errorResponse?.Message ?? 
+                                    errorResponse?.Errors?.FirstOrDefault() ?? 
+                                    "Произошла ошибка при регистрации";
+                }
+                catch
+                {
+                    // Если не удалось распарсить ответ, показываем raw content
+                    ErrorLabel.Text = $"Ошибка: {response.StatusCode}\n{responseContent}";
+                }
                 ErrorLabel.IsVisible = true;
             }
         }
         catch (HttpRequestException ex)
         {
+            Debug.WriteLine($"Register network error: {ex}");
             ErrorLabel.Text = $"Ошибка сети: {ex.Message}";
             ErrorLabel.IsVisible = true;
         }
         catch (Exception ex)
         {
-            ErrorLabel.Text = $"Произошла ошибка при регистрации: {ex.Message}";
+            Debug.WriteLine($"Register error: {ex}");
+            ErrorLabel.Text = $"Ошибка: {ex.Message}";
             ErrorLabel.IsVisible = true;
         }
         finally
