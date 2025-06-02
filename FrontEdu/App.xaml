@@ -65,7 +65,7 @@
             <!--
             <converters:MessageColorConverter x:Key="MessageColorConverter"/>      -->
             <converters:MessageAlignmentConverter x:Key="MessageAlignmentConverter"/>
-           <!-- <converters:StringNotEmptyConverter x:Key="StringNotEmptyConverter"/>       -->
+            <converters:StringNotEmptyConverter x:Key="StringNotEmptyConverter"/>      
             <!-- Конвертер для цвета фона сообщений -->
             <converters:MessageColorConverter x:Key="MessageColorConverter">
                 <converters:MessageColorConverter.FromUserColor>White</converters:MessageColorConverter.FromUserColor>

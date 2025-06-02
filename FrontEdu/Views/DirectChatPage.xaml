@@ -2,27 +2,29 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="FrontEdu.Views.DirectChatPage">
-    <Grid RowDefinitions="*, Auto">
-
+    <Grid RowDefinitions="Auto,*,Auto">
         <!-- Панель навигации -->
-        <HorizontalStackLayout Grid.Row="0" 
-                      Padding="10"
-                      Spacing="10">
-            <Button Text="←" 
-            Clicked="OnBackClicked"
-            HeightRequest="40"
-            WidthRequest="40"
-            FontSize="20"/>
-            <Label Text="Назад"
-           VerticalOptions="Center"/>
-        </HorizontalStackLayout>
+        <Grid Grid.Row="0" 
+              BackgroundColor="{StaticResource Gray200}"
+              Padding="10,5">
+            <HorizontalStackLayout Spacing="10">
+                <Button Text="←" 
+                        Clicked="OnBackClicked"
+                        HeightRequest="40"
+                        WidthRequest="40"
+                        FontSize="20"/>
+                <Label Text="Назад"
+                       VerticalOptions="Center"/>
+            </HorizontalStackLayout>
+        </Grid>
+
         <!-- Область сообщений -->
-        <CollectionView 
-            x:Name="MessagesCollection"
-            Grid.Row="0"
-            ItemsSource="{Binding Messages}"
-            RemainingItemsThreshold="2"
-            RemainingItemsThresholdReached="OnLoadMoreMessages">
+        <CollectionView x:Name="MessagesCollection"
+                       Grid.Row="1"
+                       ItemsSource="{Binding Messages}"
+                       RemainingItemsThreshold="2"
+                       RemainingItemsThresholdReached="OnLoadMoreMessages"
+                       Margin="0,5,0,0">
             <CollectionView.ItemTemplate>
                 <DataTemplate>
                     <Grid Padding="10">
@@ -89,7 +91,9 @@
         </Grid>
 
         <!-- Панель ввода -->
-        <Grid Grid.Row="1" ColumnDefinitions="*, Auto, Auto" Padding="10">
+        <Grid Grid.Row="2" 
+              ColumnDefinitions="*, Auto, Auto" 
+              Padding="10">                                                                                                       
             <Entry 
                 x:Name="MessageEntry"
                 Grid.Column="0"
