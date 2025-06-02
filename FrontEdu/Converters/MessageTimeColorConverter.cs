@@ -1,11 +1,11 @@
-﻿using System.Globalization;
+using System.Globalization;
 
 namespace FrontEdu.Converters
 {
-    public class MessageColorConverter : IValueConverter
+    public class MessageTimeColorConverter : IValueConverter
     {
-        public Color FromUserColor { get; set; } = Colors.White;
-        public Color ToUserColor { get; set; } = Color.FromArgb("#E3F2FD");
+        public Color FromUserColor { get; set; } = Color.FromArgb("#666666");
+        public Color ToUserColor { get; set; } = Color.FromArgb("#666666");
 
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {

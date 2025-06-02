@@ -62,9 +62,27 @@
                 <Setter Property="PlaceholderColor" Value="{StaticResource Gray500}"/>
                 <Setter Property="MinimumHeightRequest" Value="44"/>
             </Style>
-            <converters:MessageColorConverter x:Key="MessageColorConverter"/>
+            <!--
+            <converters:MessageColorConverter x:Key="MessageColorConverter"/>      -->
             <converters:MessageAlignmentConverter x:Key="MessageAlignmentConverter"/>
-            <converters:StringNotEmptyConverter x:Key="StringNotEmptyConverter"/>
+           <!-- <converters:StringNotEmptyConverter x:Key="StringNotEmptyConverter"/>       -->
+            <!-- Конвертер для цвета фона сообщений -->
+            <converters:MessageColorConverter x:Key="MessageColorConverter">
+                <converters:MessageColorConverter.FromUserColor>White</converters:MessageColorConverter.FromUserColor>
+                <converters:MessageColorConverter.ToUserColor>#E3F2FD</converters:MessageColorConverter.ToUserColor>
+            </converters:MessageColorConverter>
+
+            <!-- Конвертер для цвета текста сообщений -->
+            <converters:MessageTextColorConverter x:Key="MessageTextColorConverter">
+                <converters:MessageTextColorConverter.FromUserColor>Black</converters:MessageTextColorConverter.FromUserColor>
+                <converters:MessageTextColorConverter.ToUserColor>Black</converters:MessageTextColorConverter.ToUserColor>
+            </converters:MessageTextColorConverter>
+
+            <!-- Конвертер для цвета времени -->
+            <converters:MessageTimeColorConverter x:Key="MessageTimeColorConverter">
+                <converters:MessageTimeColorConverter.FromUserColor>#666666</converters:MessageTimeColorConverter.FromUserColor>
+                <converters:MessageTimeColorConverter.ToUserColor>#666666</converters:MessageTimeColorConverter.ToUserColor>
+            </converters:MessageTimeColorConverter>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

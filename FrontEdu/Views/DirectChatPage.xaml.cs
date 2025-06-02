@@ -312,5 +312,28 @@ namespace FrontEdu.Views
                 Debug.WriteLine($"Edit message error: {ex}");
             }
         }
+
+        private async void OnBackClicked(object sender, EventArgs e)
+        {
+            try
+            {
+                await Shell.Current.GoToAsync("//ChatPage");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Navigation error: {ex}");
+                // В случае ошибки пробуем альтернативный путь
+                try
+                {
+                    await Shell.Current.GoToAsync("..");
+                }
+                catch (Exception navEx)
+                {
+                    Debug.WriteLine($"Alternative navigation error: {navEx}");
+                    // Если и это не работает, просто перезагружаем чат
+                    await Shell.Current.GoToAsync("//chat");
+                }
+            }
+        }
     }
 }
