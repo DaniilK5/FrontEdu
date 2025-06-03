@@ -25,7 +25,14 @@
                        RemainingItemsThreshold="2"
                        RemainingItemsThresholdReached="OnLoadMoreMessages"
                        Margin="0,5,0,0">
+            <!-- Добавляем ItemsLayout для явного указания направления -->
+            <CollectionView.ItemsLayout>
+                <LinearItemsLayout Orientation="Vertical" 
+                                  ItemSpacing="5"/>
+            </CollectionView.ItemsLayout>
+            <!-- Существующий ItemTemplate остается без изменений -->
             <CollectionView.ItemTemplate>
+                
                 <DataTemplate>
                     <Grid Padding="10">
                         <Frame BackgroundColor="{Binding IsFromCurrentUser, Converter={StaticResource MessageColorConverter}}"
@@ -92,20 +99,29 @@
 
         <!-- Панель ввода -->
         <Grid Grid.Row="2" 
+              RowDefinitions="Auto,Auto"
               ColumnDefinitions="*, Auto, Auto" 
-              Padding="10">                                                                                                       
-            <Entry 
-                x:Name="MessageEntry"
-                Grid.Column="0"
-                Placeholder="Введите сообщение..."/>
-            <Button 
-                Grid.Column="1"
-                Text="📎"
-                Clicked="OnAttachFileClicked"/>
-            <Button 
-                Grid.Column="2"
-                Text="Отправить"
-                Clicked="OnSendClicked"/>
+              Padding="10">
+            <!-- Индикатор выбранного файла -->
+            <Label Grid.Row="0" Grid.ColumnSpan="3"
+                   x:Name="SelectedFileLabel"
+                   IsVisible="False"
+                   Text="Выбран файл для отправки"
+                   TextColor="Gray"
+                   FontSize="12"/>
+                                                                                               
+            <Entry Grid.Row="1"
+                   Grid.Column="0"
+                   x:Name="MessageEntry"
+                   Placeholder="Введите сообщение..."/>
+            <Button Grid.Row="1"
+                    Grid.Column="1"
+                    Text="📎"
+                    Clicked="OnAttachFileClicked"/>
+            <Button Grid.Row="1"
+                    Grid.Column="2"
+                    Text="Отправить"
+                    Clicked="OnSendClicked"/>
         </Grid>
     </Grid>
 </ContentPage>

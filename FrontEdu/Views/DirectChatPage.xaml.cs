@@ -31,6 +31,7 @@ namespace FrontEdu.Views
         private bool _isLoading;
         private int _userId;
         private MessageDto _messageBeingEdited;
+        private FileResult _selectedFile;
         private IServiceProvider ServiceProvider => IPlatformApplication.Current?.Services;
         public int UserId
         {
@@ -128,7 +129,10 @@ namespace FrontEdu.Views
                     {
                         await MainThread.InvokeOnMainThreadAsync(async () =>
                         {
-                            foreach (var message in messages)
+                            // Сначала получаем текущий индекс прокрутки
+                            var currentIndex = Messages.Count > 0 ? Messages.Count - 1 : 0;
+
+                            foreach (var message in messages.OrderBy(m => m.Timestamp)) // Сортируем по времени
                             {
                                 var token = await SecureStorage.GetAsync("auth_token");
                                 if (!string.IsNullOrEmpty(token))
@@ -140,7 +144,29 @@ namespace FrontEdu.Views
                                     
                                     message.IsFromCurrentUser = message.Sender.Id == currentUserId;
                                 }
-                                Messages.Add(message);
+
+                                if (_currentPage == 1)
+                                {
+                                    // Для первой страницы добавляем в конец
+                                    Messages.Add(message);
+                                }
+                                else
+                                {
+                                    // Для последующих страниц добавляем в начало
+                                    Messages.Insert(0, message);
+                                }
+                            }
+
+                            // Прокручиваем к нужной позиции
+                            if (_currentPage == 1)
+                            {
+                                // При первой загрузке прокручиваем в самый низ
+                                MessagesCollection.ScrollTo(Messages.Count - 1);
+                            }
+                            else
+                            {
+                                // При подгрузке старых сообщений сохраняем позицию
+                                MessagesCollection.ScrollTo(currentIndex + PageSize);
                             }
                         });
                     }
@@ -171,21 +197,35 @@ namespace FrontEdu.Views
         private async void OnSendClicked(object sender, EventArgs e)
         {
             if (string.IsNullOrWhiteSpace(MessageEntry.Text))
+            {
+                await DisplayAlert("Ошибка", "Введите текст сообщения", "OK");
                 return;
+            }
 
             try
             {
                 var content = new MultipartFormDataContent();
                 content.Add(new StringContent(UserId.ToString()), "ReceiverId");
                 content.Add(new StringContent(MessageEntry.Text), "Content");
-                // GroupChatId не указываем, так как это прямое сообщение
                 content.Add(new StringContent(""), "GroupChatId");
+
+                // Если есть выбранный файл, добавляем его
+                if (_selectedFile != null)
+                {
+                    var stream = await _selectedFile.OpenReadAsync();
+                    var streamContent = new StreamContent(stream);
+                    content.Add(streamContent, "Attachment", _selectedFile.FileName);
+                }
 
                 var response = await _httpClient.PostAsync("api/Message/send", content);
                 if (response.IsSuccessStatusCode)
                 {
+                    // Очищаем текст и выбранный файл
                     MessageEntry.Text = string.Empty;
+                    _selectedFile = null;
+                    
                     await LoadInitialMessages();
+                    ScrollToLastMessage();
                 }
                 else
                 {
@@ -196,56 +236,44 @@ namespace FrontEdu.Views
             catch (Exception ex)
             {
                 await DisplayAlert("Ошибка", "Не удалось отправить сообщение", "OK");
-                System.Diagnostics.Debug.WriteLine($"Send message error: {ex}");
+                Debug.WriteLine($"Send message error: {ex}");
             }
+        }
+
+        private void UpdateSelectedFileUI()
+        {
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                SelectedFileLabel.IsVisible = _selectedFile != null;
+                SelectedFileLabel.Text = _selectedFile != null 
+                    ? $"Выбранный файл: {_selectedFile.FileName}"
+                    : string.Empty;
+            });
         }
 
         private async void OnAttachFileClicked(object sender, EventArgs e)
         {
             try
             {
-                var file = await FilePicker.PickAsync();
+                var options = new PickOptions
+                {
+                    PickerTitle = "Выберите файл"
+                };
+
+                var file = await FilePicker.PickAsync(options);
                 if (file != null)
                 {
-                    var content = new MultipartFormDataContent();
-                    
-                    // Добавляем файл
-                    var streamContent = new StreamContent(await file.OpenReadAsync());
-                    content.Add(streamContent, "Attachment", file.FileName);
-                    
-                    // Добавляем получателя
-                    content.Add(new StringContent(UserId.ToString()), "ReceiverId");
-                    
-                    // Добавляем текст сообщения, если он есть
-                    if (!string.IsNullOrWhiteSpace(MessageEntry.Text))
-                    {
-                        content.Add(new StringContent(MessageEntry.Text), "Content");
-                    }
-                    else
-                    {
-                        content.Add(new StringContent(""), "Content");
-                    }
-                    
-                    // GroupChatId не указываем для прямого сообщения
-                    content.Add(new StringContent(""), "GroupChatId");
-
-                    var response = await _httpClient.PostAsync("api/Message/send", content);
-                    if (response.IsSuccessStatusCode)
-                    {
-                        MessageEntry.Text = string.Empty;
-                        await LoadInitialMessages();
-                    }
-                    else
-                    {
-                        var error = await response.Content.ReadAsStringAsync();
-                        await DisplayAlert("Ошибка", error, "OK");
-                    }
+                    _selectedFile = file;
+                    UpdateSelectedFileUI();
+                    // Уведомляем пользователя
+                    await DisplayAlert("Файл выбран", 
+                        "Введите текст сообщения и нажмите 'Отправить'", "OK");
                 }
             }
             catch (Exception ex)
             {
-                await DisplayAlert("Ошибка", "Не удалось отправить файл", "OK");
-                System.Diagnostics.Debug.WriteLine($"Send file error: {ex}");
+                Debug.WriteLine($"Ошибка при выборе файла: {ex}");
+                await DisplayAlert("Ошибка", "Не удалось выбрать файл", "OK");
             }
         }
 
@@ -385,7 +413,14 @@ namespace FrontEdu.Views
         if (OperatingSystem.IsAndroidVersionAtLeast(29)) // Android 10 и выше
         {
             using var stream = new MemoryStream(fileData);
-            var fileSaver = ServiceProvider.GetService<IFileSaver>();
+            var fileSaver = ServiceProvider?.GetService<IFileSaver>();
+            
+            if (fileSaver == null)
+            {
+                // Если сервис не найден, используем стандартный FileSaver
+                fileSaver = FileSaver.Default;
+            }
+
             var result = await fileSaver.SaveAsync(fileName, stream, 
                 new CancellationTokenSource().Token);
             
@@ -393,9 +428,20 @@ namespace FrontEdu.Views
             {
                 await DisplayAlert("Успех", "Файл успешно сохранен", "OK");
             }
+            else
+            {
+                throw new Exception("Не удалось сохранить файл");
+            }
         }
         else // Android 9 и ниже
         {
+            // Запрашиваем разрешение на запись
+            var status = await Permissions.RequestAsync<Permissions.StorageWrite>();
+            if (status != PermissionStatus.Granted)
+            {
+                throw new Exception("Нет разрешения на сохранение файлов");
+            }
+
             var downloadPath = Android.OS.Environment.GetExternalStoragePublicDirectory(
                 Android.OS.Environment.DirectoryDownloads)?.AbsolutePath;
             if (string.IsNullOrEmpty(downloadPath))
@@ -411,7 +457,7 @@ namespace FrontEdu.Views
     catch (Exception ex)
     {
         System.Diagnostics.Debug.WriteLine($"Android save error: {ex}");
-        throw;
+        await DisplayAlert("Ошибка", $"Не удалось сохранить файл: {ex.Message}", "OK");
     }
 #else
     await DisplayAlert("Ошибка", "Сохранение файлов не поддерживается на этой платформе", "OK");
@@ -476,6 +522,17 @@ namespace FrontEdu.Views
                 await DisplayAlert("Ошибка", "Не удалось отредактировать сообщение", "OK");
                 System.Diagnostics.Debug.WriteLine($"Edit message error: {ex}");
             }
+        }
+
+        private void ScrollToLastMessage()
+        {
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                if (Messages.Any())
+                {
+                    MessagesCollection.ScrollTo(Messages.Count - 1, animate: true);
+                }
+            });
         }
         /*
         private async void OnBackClicked(object sender, EventArgs e)
