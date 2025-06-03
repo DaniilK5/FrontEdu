@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="FrontEdu.Views.DirectChatPage">
     <Grid RowDefinitions="Auto,*,Auto">
-        <!-- Панель навигации -->
+        <!-- Панель навигации 
         <Grid Grid.Row="0" 
               BackgroundColor="{StaticResource Gray200}"
               Padding="10,5">
@@ -16,7 +16,7 @@
                 <Label Text="Назад"
                        VerticalOptions="Center"/>
             </HorizontalStackLayout>
-        </Grid>
+        </Grid>      -->
 
         <!-- Область сообщений -->
         <CollectionView x:Name="MessagesCollection"

@@ -312,7 +312,7 @@ namespace FrontEdu.Views
                 Debug.WriteLine($"Edit message error: {ex}");
             }
         }
-
+        /*
         private async void OnBackClicked(object sender, EventArgs e)
         {
             try
@@ -335,5 +335,6 @@ namespace FrontEdu.Views
                 }
             }
         }
+        */
     }
 }
