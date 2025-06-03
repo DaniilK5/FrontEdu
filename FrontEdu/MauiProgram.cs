@@ -1,7 +1,9 @@
-﻿using FrontEdu.Services;
+﻿using CommunityToolkit.Maui;
+using CommunityToolkit.Maui.Storage;
+using FrontEdu.Services;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Net.Http.Headers;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace FrontEdu
 {
@@ -12,6 +14,7 @@ namespace FrontEdu
             var builder = MauiApp.CreateBuilder();
             builder
                 .UseMauiApp<App>()
+                .UseMauiCommunityToolkit()
                 .ConfigureFonts(fonts =>
                 {
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
@@ -33,7 +36,7 @@ namespace FrontEdu
 #endif
                 return handler;
             });
-
+            builder.Services.AddSingleton<IFileSaver>(FileSaver.Default);
 #if WINDOWS
             // Явно указываем поддержку TLS для Windows
             System.Net.ServicePointManager.SecurityProtocol = 
