@@ -7,18 +7,23 @@
     xmlns:views="clr-namespace:FrontEdu.Views"
     Title="FrontEdu">
 
-<Shell.FlyoutBehavior>Flyout</Shell.FlyoutBehavior>
+    <Shell.FlyoutBehavior>Flyout</Shell.FlyoutBehavior>
 
     <ShellContent
         Title="Вход"
         ContentTemplate="{DataTemplate views:LoginPage}"
         Route="Login" />
 
+    <ShellContent
+        Title="Регистрация"
+        ContentTemplate="{DataTemplate views:RegisterPage}"
+        Route="Register" />
+
     <FlyoutItem Title="Главная" Route="MainPage">
         <ShellContent ContentTemplate="{DataTemplate views:MainPage}" />
     </FlyoutItem>
 
-    <!-- Секция для Администратора -->
+    <!-- Секция для Администратора --><!--
     <FlyoutItem Title="Управление" x:Name="AdminSection">
         <ShellContent 
             Title="Пользователи"
@@ -26,15 +31,15 @@
             Route="UsersPage" />
     </FlyoutItem>
 
-    <!-- Секция для всех пользователей -->
+    --><!-- Секция для всех пользователей --><!--
     <FlyoutItem Title="Профиль">
         <ShellContent 
             Title="Мой профиль"
             ContentTemplate="{DataTemplate views:ProfilePage}"
             Route="ProfilePage" />
-    </FlyoutItem>
+    </FlyoutItem>-->
 
-    <!-- Чаты доступны всем -->
+    <!-- Чаты доступны всем --><!--
     <FlyoutItem Title="Чаты">
         <Tab>
             <ShellContent 
@@ -48,7 +53,7 @@
         </Tab>
     </FlyoutItem>
 
-    <!-- Секция для Преподавателей и Студентов -->
+    --><!-- Секция для Преподавателей и Студентов --><!--
     <FlyoutItem Title="Учебные материалы" x:Name="EducationSection">
         <Tab>
             <ShellContent 
@@ -69,12 +74,7 @@
     </FlyoutItem>
 
     <ShellContent
-        Title="Регистрация"
-        ContentTemplate="{DataTemplate views:RegisterPage}"
-        Route="Register" />
-
-    <ShellContent
         Title="ProfileView"
         ContentTemplate="{DataTemplate views:ProfileViewPage}"
-        Route="ProfileViewPage" />
+        Route="ProfileViewPage" />-->
 </Shell>
