@@ -103,12 +103,28 @@
               ColumnDefinitions="*, Auto, Auto" 
               Padding="10">
             <!-- Индикатор выбранного файла -->
-            <Label Grid.Row="0" Grid.ColumnSpan="3"
-                   x:Name="SelectedFileLabel"
-                   IsVisible="False"
-                   Text="Выбран файл для отправки"
-                   TextColor="Gray"
-                   FontSize="12"/>
+            <Grid Grid.Row="0" Grid.ColumnSpan="3"
+                  IsVisible="{Binding Source={x:Reference SelectedFileLabel}, Path=IsVisible}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Label x:Name="SelectedFileLabel"
+                       Grid.Column="0"
+                       IsVisible="False"
+                       Text="Выбран файл для отправки"
+                       TextColor="Gray"
+                       FontSize="12"
+                       VerticalOptions="Center"/>
+                <Button Grid.Column="1"
+                        Text="✕"
+                        FontSize="12"
+                        HeightRequest="30"
+                        WidthRequest="30"
+                        Padding="0"
+                        Margin="5,0,0,0"
+                        Clicked="OnClearFileClicked"/>
+            </Grid>
                                                                                                
             <Entry Grid.Row="1"
                    Grid.Column="0"

@@ -222,7 +222,7 @@ namespace FrontEdu.Views
                 {
                     // Очищаем текст и выбранный файл
                     MessageEntry.Text = string.Empty;
-                    _selectedFile = null;
+                    ClearSelectedFile(); // Используем метод очистки файла
                     
                     await LoadInitialMessages();
                     ScrollToLastMessage();
@@ -245,9 +245,10 @@ namespace FrontEdu.Views
             MainThread.BeginInvokeOnMainThread(() =>
             {
                 SelectedFileLabel.IsVisible = _selectedFile != null;
-                SelectedFileLabel.Text = _selectedFile != null 
-                    ? $"Выбранный файл: {_selectedFile.FileName}"
-                    : string.Empty;
+                if (_selectedFile != null)
+                {
+                    SelectedFileLabel.Text = $"Прикреплённый файл: {_selectedFile.FileName}";
+                }
             });
         }
 
@@ -534,6 +535,21 @@ namespace FrontEdu.Views
                 }
             });
         }
+        // Метод для очистки выбранного файла
+        private void ClearSelectedFile()
+        {
+            _selectedFile = null;
+            UpdateSelectedFileUI();
+        }
+
+
+
+        // Обработчик нажатия кнопки очистки файла
+        private void OnClearFileClicked(object sender, EventArgs e)
+        {
+            ClearSelectedFile();
+        }
+
         /*
         private async void OnBackClicked(object sender, EventArgs e)
         {
