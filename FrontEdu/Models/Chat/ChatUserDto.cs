@@ -17,5 +17,6 @@ namespace FrontEdu.Models.Chat
             "Administrator" => Application.Current.Resources["Primary"] as Color ?? Colors.Red,
             _ => Application.Current.Resources["Gray400"] as Color ?? Colors.Gray
         };
+        public bool CanBeRemoved { get; set; } // Добавьте это свойство
     }
 }

@@ -64,6 +64,7 @@
             </Style>
             <!--
             <converters:MessageColorConverter x:Key="MessageColorConverter"/>      -->
+            <converters:IntToBoolConverter x:Key="IntToBoolConverter"/>
             <converters:MessageAlignmentConverter x:Key="MessageAlignmentConverter"/>
             <converters:StringNotEmptyConverter x:Key="StringNotEmptyConverter"/>      
             <!-- Конвертер для цвета фона сообщений -->
