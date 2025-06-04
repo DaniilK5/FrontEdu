@@ -14,6 +14,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
             <!-- Название чата -->
@@ -28,8 +29,19 @@
                    FontSize="14"
                    TextColor="{StaticResource Gray600}"/>
 
-            <!-- Кнопка управления участниками -->
+            <!-- Кнопка информации о чате -->
             <Button Grid.Row="0" Grid.Column="1"
+                    Grid.RowSpan="2"
+                    x:Name="InfoButton"
+                    Text="ℹ️"
+                    FontSize="20"
+                    HeightRequest="40"
+                    WidthRequest="40"
+                    Margin="0,0,5,0"
+                    Clicked="OnChatInfoClicked"/>
+
+            <!-- Кнопка управления участниками -->
+            <Button Grid.Row="0" Grid.Column="2"
                     Grid.RowSpan="2"
                     x:Name="ManageMembersButton"
                     Text="👥"
@@ -43,8 +55,6 @@
         <CollectionView x:Name="MessagesCollection"
                        Grid.Row="1"
                        ItemsSource="{Binding Messages}"
-                       RemainingItemsThreshold="2"
-                       RemainingItemsThresholdReached="OnLoadMoreMessages"
                        Margin="0,5,0,0">
             <CollectionView.ItemsLayout>
                 <LinearItemsLayout Orientation="Vertical" 
@@ -161,6 +171,59 @@
                     
                     <Button Text="Закрыть"
                             Clicked="OnCloseMembersPanelClicked"
+                            BackgroundColor="{StaticResource Gray500}"/>
+                </VerticalStackLayout>
+            </Frame>
+        </Grid>
+
+        <!-- Панель информации о чате -->
+        <Grid x:Name="ChatInfoPanel"
+              Grid.Row="1"
+              IsVisible="False"
+              BackgroundColor="#80000000">
+            <Frame Margin="20" 
+                   Padding="15" 
+                   VerticalOptions="Center"
+                   MaximumWidthRequest="400">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Информация о чате"
+                           FontSize="18"
+                           FontAttributes="Bold"
+                           HorizontalOptions="Center"/>
+
+                    <BoxView HeightRequest="1" 
+                             Color="{StaticResource Gray300}"/>
+
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="Основная информация" 
+                               FontAttributes="Bold"/>
+                        <Label Text="{Binding Source={x:Reference GroupNameLabel}, Path=Text, StringFormat='Название: {0}'}"/>
+                        <Label x:Name="CreatedAtLabel"/>
+                    </VerticalStackLayout>
+
+                    <BoxView HeightRequest="1" 
+                             Color="{StaticResource Gray300}"/>
+
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="Статистика" 
+                               FontAttributes="Bold"/>
+                        <Label x:Name="DetailedStatisticsLabel"
+                               FontSize="14"
+                               TextColor="{StaticResource Gray600}"/>
+                    </VerticalStackLayout>
+
+                    <BoxView HeightRequest="1" 
+                             Color="{StaticResource Gray300}"/>
+
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="Ваша информация" 
+                               FontAttributes="Bold"/>
+                        <Label x:Name="UserInfoLabel"/>
+                    </VerticalStackLayout>
+
+                    <Button Text="Закрыть"
+                            Clicked="OnCloseChatInfoClicked"
+                            HorizontalOptions="Center"
                             BackgroundColor="{StaticResource Gray500}"/>
                 </VerticalStackLayout>
             </Frame>

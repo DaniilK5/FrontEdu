@@ -6,6 +6,8 @@ using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http.Json;
 using Debug = System.Diagnostics.Debug;
+using FrontEdu.Models.GroupChat;
+
 
 #if WINDOWS
 using Windows.Storage;
@@ -25,8 +27,6 @@ namespace FrontEdu.Views
     {
         private HttpClient _httpClient;
         private ObservableCollection<MessageDto> Messages { get; set; }
-        private int _currentPage = 1;
-        private const int PageSize = 20;
         private bool _isLoading;
         private int _groupChatId;
         private MessageDto _messageBeingEdited;
@@ -34,6 +34,7 @@ namespace FrontEdu.Views
         private GroupChatDto _currentChat;
         private ObservableCollection<ChatUserDto> _members;
         private bool _isCreator;
+        private GroupChatDetailsResponse _chatDetails;
 
         private IServiceProvider ServiceProvider => IPlatformApplication.Current?.Services;
 
@@ -57,14 +58,7 @@ namespace FrontEdu.Views
             Messages = new ObservableCollection<MessageDto>();
             MessagesCollection.ItemsSource = Messages;
         }
-        private async void OnLoadMoreMessages(object sender, EventArgs e)
-        {
-            if (!_isLoading)
-            {
-                _currentPage++;
-                await LoadMessages();
-            }
-        }
+
         private async Task LoadGroupChatInfo()
         {
             try
@@ -74,22 +68,62 @@ namespace FrontEdu.Views
                     _httpClient = await AppConfig.CreateHttpClientAsync();
                 }
 
-                var response = await _httpClient.GetAsync($"api/Message/groups/{GroupChatId}");
+                var response = await _httpClient.GetAsync($"api/GroupChat/{GroupChatId}");
                 if (response.IsSuccessStatusCode)
                 {
-                    _currentChat = await response.Content.ReadFromJsonAsync<GroupChatDto>();
-                    await MainThread.InvokeOnMainThreadAsync(() =>
+                    var chatDetails = await response.Content.ReadFromJsonAsync<GroupChatDetailsResponse>();
+                    if (chatDetails != null)
                     {
-                        Title = _currentChat.Name;
-                    });
+                        await MainThread.InvokeOnMainThreadAsync(() =>
+                        {
+                            Title = chatDetails.Name;
+                            GroupNameLabel.Text = chatDetails.Name;
+                            MembersCountLabel.Text = $"{chatDetails.Statistics.TotalMembers} участников";
+
+                            // Преобразуем информацию о чате в текущий формат
+                            _currentChat = new GroupChatDto
+                            {
+                                Id = chatDetails.Id,
+                                Name = chatDetails.Name,
+                                CreatedAt = chatDetails.CreatedAt,
+                                Members = chatDetails.Members.Select(m => new ChatUserDto
+                                {
+                                    Id = m.UserId,
+                                    FullName = m.FullName,
+                                    Email = m.Email,
+                                    Role = m.IsAdmin ? "Administrator" : "Member",
+                                    CanBeRemoved = chatDetails.CurrentUserInfo.IsAdmin && !m.IsAdmin
+                                }).ToList()
+                            };
+
+                            // Обновляем информацию о текущем пользователе
+                            _isCreator = chatDetails.CurrentUserInfo.IsAdmin;
+
+                            // Обновляем список участников
+                            _members = new ObservableCollection<ChatUserDto>(_currentChat.Members);
+                            MembersCollection.ItemsSource = _members;
+
+                            // Обновляем видимость кнопок управления для администратора
+                            if (ManageMembersButton != null)
+                            {
+                                ManageMembersButton.IsVisible = chatDetails.CurrentUserInfo.IsAdmin;
+                            }
+                        });
+                    }
+                }
+                else
+                {
+                    var error = await response.Content.ReadAsStringAsync();
+                    Debug.WriteLine($"Error loading group chat info: {error}");
+                    await DisplayAlert("Ошибка", "Не удалось загрузить информацию о чате", "OK");
                 }
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"Error loading group chat info: {ex}");
+                await DisplayAlert("Ошибка", "Не удалось загрузить информацию о чате", "OK");
             }
         }
-
         protected override async void OnAppearing()
         {
             base.OnAppearing();
@@ -114,7 +148,6 @@ namespace FrontEdu.Views
         {
             try
             {
-                _currentPage = 1;
                 Messages.Clear();
                 await LoadMessages();
             }
@@ -132,43 +165,51 @@ namespace FrontEdu.Views
             try
             {
                 _isLoading = true;
-                var response = await _httpClient.GetAsync(
-                    $"api/Message/group/{GroupChatId}?page={_currentPage}&pageSize={PageSize}");
+                var response = await _httpClient.GetAsync($"api/GroupChat/{GroupChatId}/messages");
 
                 if (response.IsSuccessStatusCode)
                 {
-                    var messages = await response.Content.ReadFromJsonAsync<List<MessageDto>>();
-                    if (messages != null && messages.Any())
+                    var chatData = await response.Content.ReadFromJsonAsync<GroupChatMessagesResponse>();
+                    if (chatData?.Messages != null && chatData.Messages.Any())
                     {
                         await MainThread.InvokeOnMainThreadAsync(async () =>
                         {
-                            var currentIndex = Messages.Count > 0 ? Messages.Count - 1 : 0;
-
-                            foreach (var message in messages.OrderBy(m => m.Timestamp))
+                            // Получаем ID текущего пользователя для определения своих сообщений
+                            var token = await SecureStorage.GetAsync("auth_token");
+                            var currentUserId = 0;
+                            if (!string.IsNullOrEmpty(token))
                             {
-                                var token = await SecureStorage.GetAsync("auth_token");
-                                if (!string.IsNullOrEmpty(token))
-                                {
-                                    var handler = new JwtSecurityTokenHandler();
-                                    var jsonToken = handler.ReadToken(token) as JwtSecurityToken;
-                                    var currentUserId = int.Parse(jsonToken?.Claims.FirstOrDefault(c =>
-                                        c.Type.Contains("nameidentifier"))?.Value ?? "0");
-
-                                    message.IsFromCurrentUser = message.Sender.Id == currentUserId;
-                                }
-
-                                if (_currentPage == 1)
-                                    Messages.Add(message);
-                                else
-                                    Messages.Insert(0, message);
+                                var handler = new JwtSecurityTokenHandler();
+                                var jsonToken = handler.ReadToken(token) as JwtSecurityToken;
+                                currentUserId = int.Parse(jsonToken?.Claims.FirstOrDefault(c =>
+                                    c.Type.Contains("nameidentifier"))?.Value ?? "0");
                             }
 
-                            if (_currentPage == 1)
-                                MessagesCollection.ScrollTo(Messages.Count - 1);
-                            else
-                                MessagesCollection.ScrollTo(currentIndex + PageSize);
+                            // Очищаем текущие сообщения
+                            Messages.Clear();
+
+                            // Добавляем сообщения
+                            foreach (var message in chatData.Messages.OrderBy(m => m.Timestamp))
+                            {
+                                message.IsFromCurrentUser = message.Sender.Id == currentUserId;
+                                Messages.Add(message);
+                            }
+
+                            // Прокручиваем к последнему сообщению
+                            ScrollToLastMessage();
                         });
+
+                        // Обновляем информацию о чате
+                        Title = chatData.Name;
+                        GroupNameLabel.Text = chatData.Name;
+                        MembersCountLabel.Text = $"{chatData.Members.Count} участников";
                     }
+                }
+                else
+                {
+                    var error = await response.Content.ReadAsStringAsync();
+                    Debug.WriteLine($"Error loading messages: {error}");
+                    await DisplayAlert("Ошибка", "Не удалось загрузить сообщения", "OK");
                 }
             }
             catch (Exception ex)
@@ -208,7 +249,8 @@ namespace FrontEdu.Views
                 {
                     MessageEntry.Text = string.Empty;
                     ClearSelectedFile();
-                    await LoadInitialMessages();
+                    await LoadMessages(); // Изменено с LoadInitialMessages на LoadMessages
+                    ScrollToLastMessage(); // Добавлен вызов прокрутки
                 }
                 else
                 {
@@ -585,10 +627,11 @@ namespace FrontEdu.Views
             Messages.Clear();
             _messageBeingEdited = null;
             _selectedFile = null;
-            _currentPage = 1;
             _isLoading = false;
             ClearSelectedFile();
             EditMessagePanel.IsVisible = false;
+            ChatInfoPanel.IsVisible = false; // Добавим скрытие панели информации
+            ManageMembersPanel.IsVisible = false;
             MessageEntry.Text = string.Empty;
         }
 
@@ -645,10 +688,75 @@ namespace FrontEdu.Views
             }
         }
 
+        private async Task LoadMembersAsync()
+        {
+            if (_httpClient == null)
+            {
+                _httpClient = await AppConfig.CreateHttpClientAsync();
+            }
+
+            var response = await _httpClient.GetAsync($"api/GroupChat/{GroupChatId}/members");
+            if (response.IsSuccessStatusCode)
+            {
+                var members = await response.Content.ReadFromJsonAsync<List<GroupChatMemberInfo>>();
+
+                // Получаем ID и роль текущего пользователя
+                var token = await SecureStorage.GetAsync("auth_token");
+                var currentUserId = 0;
+                var isCurrentUserAdmin = false; // Добавляем объявление переменной
+
+                if (!string.IsNullOrEmpty(token))
+                {
+                    var handler = new JwtSecurityTokenHandler();
+                    var jsonToken = handler.ReadToken(token) as JwtSecurityToken;
+                    currentUserId = int.Parse(jsonToken?.Claims.FirstOrDefault(c =>
+                        c.Type.Contains("nameidentifier"))?.Value ?? "0");
+                    
+                    // Определяем, является ли текущий пользователь администратором
+                    isCurrentUserAdmin = members.FirstOrDefault(m => m.UserId == currentUserId)?.IsAdmin ?? false;
+                }
+
+                // Обновляем UI синхронно
+                _members = new ObservableCollection<ChatUserDto>(
+                    members.Select(m => new ChatUserDto
+                    {
+                        Id = m.UserId,
+                        FullName = m.FullName,
+                        Email = m.Email,
+                        Role = m.IsAdmin ? "Administrator" : "Member",
+                        // Пользователь может быть удален, если:
+                        // 1. Текущий пользователь админ
+                        // 2. Удаляемый пользователь не админ
+                        // 3. Удаляемый пользователь не является текущим пользователем
+                        CanBeRemoved = isCurrentUserAdmin && !m.IsAdmin && m.UserId != currentUserId
+                    }));
+
+                // Обновляем UI
+                MainThread.BeginInvokeOnMainThread(() =>
+                {
+                    MembersCollection.ItemsSource = _members;
+                    ManageMembersPanel.IsVisible = true;
+                });
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                Debug.WriteLine($"Error loading members: {error}");
+                await DisplayAlert("Ошибка", "Не удалось загрузить список участников", "OK");
+            }
+        }
+
         private async void OnManageMembersClicked(object sender, EventArgs e)
         {
-            await UpdateGroupInfo();
-            ManageMembersPanel.IsVisible = true;
+            try
+            {
+                await LoadMembersAsync();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error in OnManageMembersClicked: {ex}");
+                await DisplayAlert("Ошибка", "Не удалось загрузить список участников", "OK");
+            }
         }
 
         private void OnCloseMembersPanelClicked(object sender, EventArgs e)
@@ -668,7 +776,7 @@ namespace FrontEdu.Views
                 try
                 {
                     var response = await _httpClient.DeleteAsync(
-                        $"api/Message/groups/{GroupChatId}/members/{memberId}");
+                        $"api/GroupChat/{GroupChatId}/members/{memberId}");
 
                     if (response.IsSuccessStatusCode)
                     {
@@ -677,12 +785,14 @@ namespace FrontEdu.Views
                         {
                             _members.Remove(memberToRemove);
                         }
-                        await UpdateGroupInfo();
+                        // Обновляем список участников после успешного удаления
+                        await LoadMembersAsync();
                     }
                     else
                     {
                         var error = await response.Content.ReadAsStringAsync();
-                        await DisplayAlert("Ошибка", error, "OK");
+                        Debug.WriteLine($"Error removing member: {error}");
+                        await DisplayAlert("Ошибка", "Не удалось удалить участника", "OK");
                     }
                 }
                 catch (Exception ex)
@@ -691,6 +801,61 @@ namespace FrontEdu.Views
                     await DisplayAlert("Ошибка", "Не удалось удалить участника", "OK");
                 }
             }
+        }
+
+
+        // Добавим метод для отображения информации о чате
+        private async void OnChatInfoClicked(object sender, EventArgs e)
+        {
+            try
+            {
+                if (_httpClient == null)
+                {
+                    _httpClient = await AppConfig.CreateHttpClientAsync();
+                }
+
+                var response = await _httpClient.GetAsync($"api/GroupChat/{GroupChatId}");
+                if (response.IsSuccessStatusCode)
+                {
+                    _chatDetails = await response.Content.ReadFromJsonAsync<GroupChatDetailsResponse>();
+                    
+                    await MainThread.InvokeOnMainThreadAsync(() =>
+                    {
+                        // Обновляем информацию в панели
+                        CreatedAtLabel.Text = $"Создан: {_chatDetails.CreatedAt:dd.MM.yyyy HH:mm}";
+                        
+                        DetailedStatisticsLabel.Text = 
+                            $"Всего участников: {_chatDetails.Statistics.TotalMembers}\n" +
+                            $"Администраторов: {_chatDetails.Statistics.AdminsCount}\n" +
+                            $"Всего сообщений: {_chatDetails.Statistics.TotalMessages}\n" +
+                            $"Вложений: {_chatDetails.Statistics.TotalAttachments}\n" +
+                            $"Непрочитанных: {_chatDetails.Statistics.UnreadMessages}";
+
+                        UserInfoLabel.Text = 
+                            $"Роль: {(_chatDetails.CurrentUserInfo.IsAdmin ? "Администратор" : "Участник")}\n" +
+                            $"Присоединились: {_chatDetails.CurrentUserInfo.JoinedAt:dd.MM.yyyy HH:mm}\n" +
+                            $"Ваших сообщений: {_chatDetails.Statistics.YourMessages}";
+
+                        // Показываем панель
+                        ChatInfoPanel.IsVisible = true;
+                    });
+                }
+                else
+                {
+                    var error = await response.Content.ReadAsStringAsync();
+                    await DisplayAlert("Ошибка", "Не удалось загрузить информацию о чате", "OK");
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error loading chat info: {ex}");
+                await DisplayAlert("Ошибка", "Не удалось загрузить информацию о чате", "OK");
+            }
+        }
+
+        private void OnCloseChatInfoClicked(object sender, EventArgs e)
+        {
+            ChatInfoPanel.IsVisible = false;
         }
 
         private async void OnAddMembersClicked(object sender, EventArgs e)
@@ -724,13 +889,17 @@ namespace FrontEdu.Views
                         var selectedUser = availableUsers.FirstOrDefault(u => u.FullName == selection);
                         if (selectedUser != null)
                         {
-                            // Отправляем запрос на добавление участника
-                            var addMemberResponse = await _httpClient.PostAsync(
-                                $"api/Message/groups/{GroupChatId}/members/{selectedUser.Id}", null);
+                            // Создаем объект запроса
+                            var addMemberRequest = new { userId = selectedUser.Id };
+
+                            // Отправляем запрос на добавление участника по новому эндпоинту
+                            var addMemberResponse = await _httpClient.PostAsJsonAsync(
+                                $"api/GroupChat/{GroupChatId}/AddMember", addMemberRequest);
 
                             if (addMemberResponse.IsSuccessStatusCode)
                             {
-                                await UpdateGroupInfo();
+                                // Обновляем информацию о группе после успешного добавления
+                                await LoadMembersAsync();
                             }
                             else
                             {
