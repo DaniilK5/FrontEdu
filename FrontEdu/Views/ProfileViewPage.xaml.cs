@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Diagnostics;
+using System.IdentityModel.Tokens.Jwt;
 using FrontEdu.Models.User;
 using FrontEdu.Services;
 
@@ -17,6 +18,8 @@ namespace FrontEdu.Views
     {
         private HttpClient _httpClient;
         private int _userId;
+        private bool _isAdmin;
+        private UserProfileDto _currentUser;
 
         public int UserId
         {
@@ -26,7 +29,8 @@ namespace FrontEdu.Views
                 if (_userId != value)
                 {
                     _userId = value;
-                    LoadUserProfile();
+                    // Используем Task.Run для асинхронного вызова
+                    MainThread.BeginInvokeOnMainThread(async () => await LoadUserProfile());
                 }
             }
         }
@@ -42,6 +46,16 @@ namespace FrontEdu.Views
             try
             {
                 _httpClient = await AppConfig.CreateHttpClientAsync();
+                
+                // Проверяем, является ли текущий пользователь администратором
+                var token = await SecureStorage.GetAsync("auth_token");
+                if (!string.IsNullOrEmpty(token))
+                {
+                    var handler = new JwtSecurityTokenHandler();
+                    var jsonToken = handler.ReadToken(token) as JwtSecurityToken;
+                    var role = jsonToken?.Claims.FirstOrDefault(c => c.Type.Contains("role"))?.Value;
+                    _isAdmin = role == "Administrator";
+                }
             }
             catch (Exception ex)
             {
@@ -50,7 +64,7 @@ namespace FrontEdu.Views
             }
         }
 
-        private async void LoadUserProfile()
+        private async Task LoadUserProfile()
         {
             try
             {
@@ -64,42 +78,13 @@ namespace FrontEdu.Views
                 var response = await _httpClient.GetAsync($"api/Profile/users/{UserId}");
                 if (response.IsSuccessStatusCode)
                 {
-                    var user = await response.Content.ReadFromJsonAsync<UserProfileDto>();
-                    if (user != null)
+                    _currentUser = await response.Content.ReadFromJsonAsync<UserProfileDto>();
+                    if (_currentUser != null)
                     {
-                        await MainThread.InvokeOnMainThreadAsync(() =>
+                        // Синхронное обновление UI
+                        MainThread.BeginInvokeOnMainThread(() =>
                         {
-                            // Основная информация
-                            FullNameLabel.Text = user.FullName ?? "-";
-                            EmailLabel.Text = user.Email ?? "-";
-                            RoleLabel.Text = user.Role ?? "-";
-
-                            // Контактная информация
-                            AddressLabel.Text = user.Address ?? "-";
-                            PhoneLabel.Text = user.PhoneNumber ?? "-";
-                            SocialStatusLabel.Text = user.SocialStatus ?? "-";
-
-                            // Студенческая информация
-                            bool isStudent = user.Role?.Equals("Student", StringComparison.OrdinalIgnoreCase) ?? false;
-                            StudentInfoPanel.IsVisible = isStudent;
-                            if (isStudent)
-                            {
-                                StudentGroupLabel.Text = user.StudentGroup ?? "-";
-                                StudentIdLabel.Text = user.StudentId ?? "-";
-                            }
-
-                            // Информация о группе
-                            if (user.GroupInfo != null)
-                            {
-                                GroupInfoPanel.IsVisible = true;
-                                GroupNameLabel.Text = user.GroupInfo.Name ?? "-";
-                                GroupDescriptionLabel.Text = user.GroupInfo.Description ?? "-";
-                                CuratorNameLabel.Text = user.GroupInfo.CuratorName ?? "-";
-                            }
-                            else
-                            {
-                                GroupInfoPanel.IsVisible = false;
-                            }
+                            UpdateUI(_currentUser);
                         });
                     }
                 }
@@ -119,7 +104,88 @@ namespace FrontEdu.Views
                 LoadingIndicator.IsVisible = false;
             }
         }
+
+        // Отдельный метод для обновления UI
+        private void UpdateUI(UserProfileDto user)
+        {
+            // Основная информация
+            FullNameLabel.Text = user.FullName ?? "-";
+            EmailLabel.Text = user.Email ?? "-";
+            RoleLabel.Text = user.Role ?? "-";
+
+            // Показываем секцию редактирования роли только администратору
+            RoleEditSection.IsVisible = _isAdmin;
+            if (_isAdmin)
+            {
+                // Устанавливаем текущую роль в Picker
+                var roleIndex = Array.IndexOf(RolePicker.Items.ToArray(), user.Role);
+                if (roleIndex >= 0)
+                {
+                    RolePicker.SelectedIndex = roleIndex;
+                }
+            }
+
+            // Контактная информация
+            AddressLabel.Text = user.Address ?? "-";
+            PhoneLabel.Text = user.PhoneNumber ?? "-";
+            SocialStatusLabel.Text = user.SocialStatus ?? "-";
+
+            // Студенческая информация
+            bool isStudent = user.Role?.Equals("Student", StringComparison.OrdinalIgnoreCase) ?? false;
+            StudentInfoPanel.IsVisible = isStudent;
+            if (isStudent)
+            {
+                StudentGroupLabel.Text = user.StudentGroup ?? "-";
+                StudentIdLabel.Text = user.StudentId ?? "-";
+            }
+
+            // Информация о группе
+            if (user.GroupInfo != null)
+            {
+                GroupInfoPanel.IsVisible = true;
+                GroupNameLabel.Text = user.GroupInfo.Name ?? "-";
+                GroupDescriptionLabel.Text = user.GroupInfo.Description ?? "-";
+                CuratorNameLabel.Text = user.GroupInfo.CuratorName ?? "-";
+            }
+            else
+            {
+                GroupInfoPanel.IsVisible = false;
+            }
+        }
+
+        private async void OnSaveRoleClicked(object sender, EventArgs e)
+        {
+            if (!_isAdmin || RolePicker.SelectedItem == null)
+                return;
+
+            try
+            {
+                LoadingIndicator.IsVisible = true;
+
+                var newRole = new { role = RolePicker.SelectedItem.ToString() };
+                var response = await _httpClient.PutAsJsonAsync(
+                    $"api/Admin/users/{UserId}/role", newRole);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    await DisplayAlert("Успех", "Роль пользователя успешно обновлена", "OK");
+                    await LoadUserProfile(); // Перезагружаем профиль
+                }
+                else
+                {
+                    var error = await response.Content.ReadAsStringAsync();
+                    await DisplayAlert("Ошибка", error, "OK");
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error updating user role: {ex}");
+                await DisplayAlert("Ошибка", "Не удалось обновить роль пользователя", "OK");
+            }
+            finally
+            {
+                LoadingIndicator.IsVisible = false;
+            }
+        }
     }
-
-
 }

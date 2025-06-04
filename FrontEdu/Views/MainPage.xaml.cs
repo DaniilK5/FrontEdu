@@ -1,4 +1,5 @@
 using FrontEdu.Services;
+using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
 
 namespace FrontEdu.Views
@@ -39,13 +40,32 @@ namespace FrontEdu.Views
             bool answer = await DisplayAlert("Выход", "Вы уверены, что хотите выйти?", "Да", "Нет");
             if (answer)
             {
-                await SecureStorage.Default.SetAsync("auth_token", null);
-                AppConfig.ResetHttpClient();
-                Application.Current.MainPage = new AppShell();
-                await Shell.Current.GoToAsync("//Login");
+                try
+                {
+                    // Удаляем токен, устанавливая пустую строку
+                    await SecureStorage.Default.SetAsync("auth_token", string.Empty);
+
+                    // Сбрасываем HTTP клиент
+                    AppConfig.ResetHttpClient();
+
+                    // Создаем новый AppShell и устанавливаем его как MainPage
+                    await MainThread.InvokeOnMainThreadAsync(() =>
+                    {
+                        var newShell = new AppShell();
+                        Application.Current.MainPage = newShell;
+                        return Task.CompletedTask;
+                    });
+
+                    // Переходим на страницу входа
+                    await Shell.Current.GoToAsync("//Login");
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Logout error: {ex}");
+                    await DisplayAlert("Ошибка", "Не удалось выполнить выход", "OK");
+                }
             }
         }
-
         private async void OnCoursesClicked(object sender, EventArgs e)
         {
             await Shell.Current.GoToAsync("//CoursesPage");
