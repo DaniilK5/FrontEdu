@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="FrontEdu.Views.ProfileViewPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="Профиль пользователя">
+    <ScrollView>
+        <VerticalStackLayout Padding="20">
+            <ActivityIndicator x:Name="LoadingIndicator" IsVisible="False" IsRunning="True"/>
+
+            <Frame Margin="0,10" Padding="15">
+                <VerticalStackLayout Spacing="15">
+                    <!-- Основная информация -->
+                    <Label Text="Основная информация" FontSize="18" FontAttributes="Bold"/>
+                    
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="ФИО:" FontAttributes="Bold"/>
+                        <Label x:Name="FullNameLabel" Text="-"/>
+                        
+                        <Label Text="Email:" FontAttributes="Bold"/>
+                        <Label x:Name="EmailLabel" Text="-"/>
+                        
+                        <Label Text="Роль:" FontAttributes="Bold"/>
+                        <Label x:Name="RoleLabel" Text="-"/>
+                    </VerticalStackLayout>
+
+                    <!-- Студенческая информация (видима только для студентов) -->
+                    <VerticalStackLayout x:Name="StudentInfoPanel" IsVisible="False" Spacing="5">
+                        <Label Text="Информация о студенте" FontSize="18" FontAttributes="Bold"/>
+                        
+                        <Label Text="Группа:" FontAttributes="Bold"/>
+                        <Label x:Name="StudentGroupLabel" Text="-"/>
+                        
+                        <Label Text="Студенческий билет:" FontAttributes="Bold"/>
+                        <Label x:Name="StudentIdLabel" Text="-"/>
+                    </VerticalStackLayout>
+
+                    <!-- Информация о группе -->
+                    <VerticalStackLayout x:Name="GroupInfoPanel" IsVisible="False" Spacing="5">
+                        <Label Text="Информация о группе" FontSize="18" FontAttributes="Bold"/>
+                        
+                        <Label Text="Название группы:" FontAttributes="Bold"/>
+                        <Label x:Name="GroupNameLabel" Text="-"/>
+                        
+                        <Label Text="Описание:" FontAttributes="Bold"/>
+                        <Label x:Name="GroupDescriptionLabel" Text="-"/>
+                        
+                        <Label Text="Куратор:" FontAttributes="Bold"/>
+                        <Label x:Name="CuratorNameLabel" Text="-"/>
+                    </VerticalStackLayout>
+
+                    <!-- Контактная информация -->
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="Контактная информация" FontSize="18" FontAttributes="Bold"/>
+                        
+                        <Label Text="Адрес:" FontAttributes="Bold"/>
+                        <Label x:Name="AddressLabel" Text="-"/>
+                        
+                        <Label Text="Телефон:" FontAttributes="Bold"/>
+                        <Label x:Name="PhoneLabel" Text="-"/>
+                        
+                        <Label Text="Социальный статус:" FontAttributes="Bold"/>
+                        <Label x:Name="SocialStatusLabel" Text="-"/>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </Frame>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

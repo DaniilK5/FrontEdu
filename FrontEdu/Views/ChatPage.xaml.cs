@@ -18,10 +18,15 @@ namespace FrontEdu.Views
         public ChatPage()
         {
             InitializeComponent();
-            InitializeAsync();
         }
 
-        private async void InitializeAsync()
+        protected override async void OnAppearing()
+        {
+            base.OnAppearing();
+            await InitializePage();
+        }
+
+        private async Task InitializePage()
         {
             try
             {
@@ -37,10 +42,13 @@ namespace FrontEdu.Views
                 }
 
                 _httpClient = await AppConfig.CreateHttpClientAsync();
-                _users = new ObservableCollection<ChatUserDto>();
-                UsersCollection.ItemsSource = _users;
-
-                UsersRefreshView.Command = new Command(async () => await RefreshUsers());
+                
+                if (_users == null)
+                {
+                    _users = new ObservableCollection<ChatUserDto>();
+                    UsersCollection.ItemsSource = _users;
+                    UsersRefreshView.Command = new Command(async () => await RefreshUsers());
+                }
 
                 await LoadUsers();
             }
@@ -53,6 +61,13 @@ namespace FrontEdu.Views
             {
                 LoadingIndicator.IsVisible = false;
             }
+        }
+
+        protected override void OnDisappearing()
+        {
+            base.OnDisappearing();
+            // Очищаем выбор
+            UsersCollection.SelectedItem = null;
         }
 
         private async Task LoadUsers()
@@ -96,8 +111,7 @@ namespace FrontEdu.Views
                 {
                     var users = await response.Content.ReadFromJsonAsync<List<ChatUserDto>>();
                     
-                    [SupportedOSPlatform("Windows"), SupportedOSPlatform("Android"), 
-                     SupportedOSPlatform("iOS"), SupportedOSPlatform("MacCatalyst")]
+                    [SupportedOSPlatform("Windows"), SupportedOSPlatform("Android")]
                     async Task UpdateUI()
                     {
                         await MainThread.InvokeOnMainThreadAsync(() =>
@@ -193,12 +207,15 @@ namespace FrontEdu.Views
             {
                 try
                 {
+                    // Сохраняем ID выбранного пользователя
+                    var userId = selectedUser.Id;
+                    // Очищаем выбранный элемент
                     UsersCollection.SelectedItem = null;
-                    Debug.WriteLine($"Navigating to chat with user ID: {selectedUser.Id}");
-                    
+                    Debug.WriteLine($"Navigating to chat with user ID: {userId}");
+
                     var navigationParameter = new Dictionary<string, object>
                     {
-                        { "userId", selectedUser.Id }
+                        { "userId", userId }
                     };
 
                     await Shell.Current.GoToAsync("DirectChatPage", navigationParameter);

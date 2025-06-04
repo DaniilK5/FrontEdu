@@ -44,7 +44,13 @@
                                     <Label Grid.Column="0"
                                            Text="{Binding Sender.FullName}"
                                            FontAttributes="Bold"
-                                           TextColor="{Binding IsFromCurrentUser, Converter={StaticResource MessageTextColorConverter}}"/>
+                                           TextColor="{Binding IsFromCurrentUser, Converter={StaticResource MessageTextColorConverter}}">
+                                        <Label.GestureRecognizers>
+                                            <TapGestureRecognizer 
+                                                CommandParameter="{Binding Sender.Id}"
+                                                Tapped="OnUserNameTapped"/>
+                                        </Label.GestureRecognizers>
+                                    </Label>
                                     <!-- Кнопка редактирования -->
                                     <Button Grid.Column="1"
                                             Text="✎"

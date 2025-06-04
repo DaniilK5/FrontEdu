@@ -42,18 +42,6 @@ namespace FrontEdu.Views
                 {
                     _userId = value;
                     System.Diagnostics.Debug.WriteLine($"UserId set to: {value}");
-                    MainThread.BeginInvokeOnMainThread(async () =>
-                    {
-                        try
-                        {
-                            await LoadInitialMessages();
-                        }
-                        catch (Exception ex)
-                        {
-                            System.Diagnostics.Debug.WriteLine($"Error loading messages: {ex}");
-                            await DisplayAlert("Ошибка", "Не удалось загрузить сообщения", "OK");
-                        }
-                    });
                 }
             }
         }
@@ -63,7 +51,26 @@ namespace FrontEdu.Views
             InitializeComponent();
             Messages = new ObservableCollection<MessageDto>();
             MessagesCollection.ItemsSource = Messages;
-            InitializeAsync();
+        }
+
+        protected override async void OnAppearing()
+        {
+            base.OnAppearing();
+            
+            try
+            {
+                if (_httpClient == null)
+                {
+                    _httpClient = await AppConfig.CreateHttpClientAsync();
+                }
+                
+                await LoadInitialMessages();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error in OnAppearing: {ex}");
+                await DisplayAlert("Ошибка", "Не удалось загрузить сообщения", "OK");
+            }
         }
 
         private async void InitializeAsync()
@@ -550,6 +557,27 @@ namespace FrontEdu.Views
             ClearSelectedFile();
         }
 
+
+        private async void OnUserNameTapped(object sender, TappedEventArgs e)
+        {
+            if (e.Parameter is int userId)
+            {
+                try
+                {
+                    var navigationParameter = new Dictionary<string, object>
+            {
+                { "userId", userId }
+            };
+                    await Shell.Current.GoToAsync($"/ProfileViewPage", navigationParameter);
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Navigation error: {ex}");
+                    await DisplayAlert("Ошибка", "Не удалось открыть профиль пользователя", "OK");
+                }
+            }
+        }
+
         /*
         private async void OnBackClicked(object sender, EventArgs e)
         {
@@ -574,5 +602,23 @@ namespace FrontEdu.Views
             }
         }
         */
+
+        private void ResetState()
+        {
+            Messages.Clear();
+            _messageBeingEdited = null;
+            _selectedFile = null;
+            _currentPage = 1;
+            _isLoading = false;
+            ClearSelectedFile();
+            EditMessagePanel.IsVisible = false;
+            MessageEntry.Text = string.Empty;
+        }
+
+        protected override void OnDisappearing()
+        {
+            base.OnDisappearing();
+            ResetState();
+        }
     }
 }

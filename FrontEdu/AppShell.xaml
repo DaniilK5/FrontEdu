@@ -85,6 +85,12 @@
         Title="Групповые чаты"
         ContentTemplate="{DataTemplate views:GroupChatsPage}"
         Route="GroupChatsPage" />
+
+    <ShellContent
+        Title="ProfileView"
+        ContentTemplate="{DataTemplate views:ProfileViewPage}"
+        Route="ProfileViewPage" />
+    
     <!-- Добавьте перед закрывающим тегом Shell       
     <ShellContent
         Route="chat"
