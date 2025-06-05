@@ -177,34 +177,25 @@ public partial class AssignmentsPage : ContentPage
                 { "assignmentId", selectedAssignment.Id }
             };
 
-                try
-                {
-                    // Используем относительную навигацию
-                    await Shell.Current.GoToAsync($"../AssignmentDetailsPage", navigationParameter);
-                }
-                catch (Exception navEx)
-                {
-                    Debug.WriteLine($"First navigation attempt failed: {navEx}");
-                    try
-                    {
-                        // Пробуем альтернативный путь
-                        await Shell.Current.GoToAsync($"///AssignmentDetailsPage", navigationParameter);
-                    }
-                    catch (Exception altNavEx)
-                    {
-                        Debug.WriteLine($"Alternative navigation error: {altNavEx}");
-                        await DisplayAlert("Ошибка", "Не удалось открыть детали задания", "OK");
-                    }
-                }
+                Debug.WriteLine($"Navigating to assignment details with ID: {selectedAssignment.Id}");
+                await Shell.Current.GoToAsync($"//AssignmentDetailsPage", navigationParameter);
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Selection error: {ex}");
-                await DisplayAlert("Ошибка", "Не удалось открыть детали задания", "OK");
+                Debug.WriteLine($"Navigation error: {ex}");
+                try
+                {
+                    // Альтернативный вариант навигации
+                    await Shell.Current.GoToAsync($"AssignmentDetailsPage?assignmentId={selectedAssignment.Id}");
+                }
+                catch (Exception altEx)
+                {
+                    Debug.WriteLine($"Alternative navigation error: {altEx}");
+                    await DisplayAlert("Ошибка", "Не удалось открыть детали задания", "OK");
+                }
             }
         }
     }
-
     private async void OnAddAssignmentClicked(object sender, EventArgs e)
     {
         if (!_canCreateAssignments) return;

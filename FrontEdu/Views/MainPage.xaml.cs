@@ -1,4 +1,6 @@
+using FrontEdu.Models.Auth;
 using FrontEdu.Services;
+using System.Net.Http.Json;
 using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
 
@@ -6,66 +8,77 @@ namespace FrontEdu.Views
 {
     public partial class MainPage : ContentPage
     {
-        private string? userRole;
+        private UserPermissionsResponse _userPermissions;
+        private HttpClient _httpClient;
+        private bool _isInitialized;
 
         public MainPage()
         {
             InitializeComponent();
-            InitializeAsync();
         }
 
-        private async void InitializeAsync()
+        protected override async void OnAppearing()
+        {
+            base.OnAppearing();
+            if (!_isInitialized)
+            {
+                await InitializePage();
+                _isInitialized = true;
+            }
+        }
+
+        private async Task InitializePage()
         {
             try
             {
-                var token = await SecureStorage.GetAsync("auth_token");
-                if (!string.IsNullOrEmpty(token))
+                if (_httpClient == null)
                 {
-                    var handler = new JwtSecurityTokenHandler();
-                    var jsonToken = handler.ReadToken(token) as JwtSecurityToken;
-                    userRole = jsonToken?.Claims.FirstOrDefault(c => c.Type.Contains("role"))?.Value;
+                    _httpClient = await AppConfig.CreateHttpClientAsync();
+                }
 
-                    // Показываем/скрываем элементы в зависимости от роли
-                    AdminSection.IsVisible = userRole == "Administrator";
+                // Получаем разрешения пользователя
+                var response = await _httpClient.GetAsync("api/Profile/me/permissions");
+                if (response.IsSuccessStatusCode)
+                {
+                    _userPermissions = await response.Content.ReadFromJsonAsync<UserPermissionsResponse>();
+
+                    await MainThread.InvokeOnMainThreadAsync(() =>
+                    {
+                        // Секция обучения
+                        var hasEducationAccess = _userPermissions.Categories.Courses.CanView || 
+                                               _userPermissions.Categories.Assignments.CanView || 
+                                               _userPermissions.Categories.Assignments.CanSubmit;
+
+                        // Добавляем проверку для кнопки предметов
+                        SubjectsButton.IsVisible = _userPermissions.Categories.Courses.CanView;
+                        CoursesButton.IsVisible = _userPermissions.Categories.Courses.CanView;
+                        AssignmentsButton.IsVisible = _userPermissions.Categories.Assignments.CanView || 
+                                                    _userPermissions.Categories.Assignments.CanSubmit;
+
+                        // Секция администрирования
+                        AdminSection.IsVisible = _userPermissions.Permissions.ManageUsers;
+
+                        // Секция чатов
+                        var hasMessageAccess = _userPermissions.Permissions.SendMessages;
+                        ChatButton.IsVisible = hasMessageAccess;
+                        GroupChatsButton.IsVisible = hasMessageAccess;
+
+                        // Настройки
+                        SettingsButton.IsVisible = _userPermissions.Permissions.ManageSettings;
+                    });
+                }
+                else
+                {
+                    throw new Exception($"Failed to get permissions: {response.StatusCode}");
                 }
             }
             catch (Exception ex)
             {
-                await DisplayAlert("Ошибка", "Не удалось загрузить данные пользователя", "OK");
+                Debug.WriteLine($"Error initializing main page: {ex}");
+                await DisplayAlert("Ошибка", "Не удалось загрузить настройки", "OK");
             }
         }
 
-        private async void OnLogoutClicked(object sender, EventArgs e)
-        {
-            bool answer = await DisplayAlert("Выход", "Вы уверены, что хотите выйти?", "Да", "Нет");
-            if (answer)
-            {
-                try
-                {
-                    // Удаляем токен, устанавливая пустую строку
-                    await SecureStorage.Default.SetAsync("auth_token", string.Empty);
-
-                    // Сбрасываем HTTP клиент
-                    AppConfig.ResetHttpClient();
-
-                    // Создаем новый AppShell и устанавливаем его как MainPage
-                    await MainThread.InvokeOnMainThreadAsync(() =>
-                    {
-                        var newShell = new AppShell();
-                        Application.Current.MainPage = newShell;
-                        return Task.CompletedTask;
-                    });
-
-                    // Переходим на страницу входа
-                    await Shell.Current.GoToAsync("//Login");
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"Logout error: {ex}");
-                    await DisplayAlert("Ошибка", "Не удалось выполнить выход", "OK");
-                }
-            }
-        }
         private async void OnCoursesClicked(object sender, EventArgs e)
         {
             await Shell.Current.GoToAsync("//CoursesPage");
@@ -88,10 +101,7 @@ namespace FrontEdu.Views
 
         private async void OnUsersClicked(object sender, EventArgs e)
         {
-            if (userRole == "Administrator")
-            {
-                await Shell.Current.GoToAsync("//UsersPage");
-            }
+            await Shell.Current.GoToAsync("//UsersPage");
         }
 
         private async void OnChatClicked(object sender, EventArgs e)
@@ -102,6 +112,44 @@ namespace FrontEdu.Views
         private async void OnGroupChatsClicked(object sender, EventArgs e)
         {
             await Shell.Current.GoToAsync("//GroupChatsPage");
+        }
+
+        private async void OnLogoutClicked(object sender, EventArgs e)
+        {
+            try
+            {
+                // Очищаем токен
+                await SecureStorage.Default.SetAsync("auth_token", string.Empty);
+                
+                // Перенаправляем на страницу входа
+                await Shell.Current.GoToAsync("//Login");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Logout error: {ex}");
+                await DisplayAlert("Ошибка", "Не удалось выйти из системы", "OK");
+            }
+        }
+
+        private async void OnSubjectsClicked(object sender, EventArgs e)
+        {
+            await Shell.Current.GoToAsync("//SubjectsPage");
+        }
+
+        protected override void OnDisappearing()
+        {
+            base.OnDisappearing();
+            // Не освобождаем HttpClient при каждом исчезновении страницы
+            _userPermissions = null;
+        }
+
+        // Добавляем метод для очистки ресурсов при выходе из приложения
+        public void Cleanup()
+        {
+            _httpClient?.Dispose();
+            _httpClient = null;
+            _userPermissions = null;
+            _isInitialized = false;
         }
     }
 }

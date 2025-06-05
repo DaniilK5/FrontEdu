@@ -40,9 +40,9 @@ namespace FrontEdu
             Routing.RegisterRoute("GroupChatsPage", typeof(GroupChatsPage));
             Routing.RegisterRoute("ProfileViewPage", typeof(ProfileViewPage));
             Routing.RegisterRoute("AssignmentsPage", typeof(AssignmentsPage));
-            //Routing.RegisterRoute("AssignmentDetailsPage", typeof(AssignmentDetailsPage));
+            Routing.RegisterRoute("AssignmentDetailsPage", typeof(AssignmentDetailsPage));
 
-
+            Routing.RegisterRoute("SubjectsPage", typeof(SubjectsPage));
 
         }
 
@@ -215,7 +215,17 @@ namespace FrontEdu
                 Title = "Учебные материалы"
             };
             var tab = new Tab();
-            
+
+            if (_userPermissions.Categories.Courses.CanView)
+            {
+                tab.Items.Add(new ShellContent
+                {
+                    Title = "Предметы",
+                    Route = "SubjectsPage",
+                    ContentTemplate = new DataTemplate(typeof(SubjectsPage))
+                });
+            }
+
             if (_userPermissions.Categories.Courses.CanView)
             {
                 tab.Items.Add(new ShellContent
@@ -225,8 +235,8 @@ namespace FrontEdu
                     ContentTemplate = new DataTemplate(typeof(CoursesPage))
                 });
             }
-            
-            if (_userPermissions.Categories.Assignments.CanView || 
+
+            if (_userPermissions.Categories.Assignments.CanView ||
                 _userPermissions.Categories.Assignments.CanSubmit)
             {
                 tab.Items.Add(new ShellContent
@@ -236,10 +246,11 @@ namespace FrontEdu
                     ContentTemplate = new DataTemplate(typeof(AssignmentsPage))
                 });
             }
-            
+
             educationSection.Items.Add(tab);
             Items.Add(educationSection);
         }
+
 
         private void AddSettingsSection()
         {

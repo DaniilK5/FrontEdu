@@ -21,6 +21,12 @@
                         HorizontalOptions="Center"/>
                     
                     <Button 
+                        x:Name="SubjectsButton"
+                        Text="Предметы"
+                        Clicked="OnSubjectsClicked"
+                        HorizontalOptions="Fill"/>
+                    
+                    <Button 
                         x:Name="CoursesButton"
                         Text="Курсы"
                         Clicked="OnCoursesClicked"

@@ -67,7 +67,8 @@
             <converters:IntToBoolConverter x:Key="IntToBoolConverter"/>
             <converters:MessageAlignmentConverter x:Key="MessageAlignmentConverter"/>
             <converters:StringNotEmptyConverter x:Key="StringNotEmptyConverter"/>
-
+            <converters:NotNullConverter x:Key="NotNullConverter"/>
+            <converters:IsNullConverter x:Key="IsNullConverter"/>
 
             <converters:StringNotNullOrEmptyConverter x:Key="StringNotNullOrEmptyConverter"/>
 
