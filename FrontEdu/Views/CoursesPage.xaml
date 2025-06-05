@@ -3,9 +3,96 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="FrontEdu.Views.CoursesPage"
              Title="Курсы">
-    <VerticalStackLayout Padding="20">
-        <Label Text="Список курсов"
-               FontSize="24"
-               HorizontalOptions="Center"/>
-    </VerticalStackLayout>
+
+    <Grid RowDefinitions="Auto,*">
+        <!-- Верхняя панель -->
+        <Grid Grid.Row="0" 
+              Padding="10"
+              ColumnDefinitions="*,Auto"
+              BackgroundColor="{StaticResource Gray200}">
+
+            <SearchBar Grid.Column="0"
+                       x:Name="SearchBar"
+                       Placeholder="Поиск курса"
+                       TextChanged="OnSearchTextChanged"/>
+
+            <Button Grid.Column="1"
+                    x:Name="AddCourseButton"
+                    Text="+"
+                    FontSize="20"
+                    WidthRequest="50"
+                    Margin="5,0,0,0"
+                    Clicked="OnAddCourseClicked"/>
+        </Grid>
+
+        <!-- Список курсов -->
+        <RefreshView Grid.Row="1"
+                     x:Name="CoursesRefreshView">
+            <CollectionView x:Name="CoursesCollection"
+                          SelectionMode="Single"
+                          SelectionChanged="OnCourseSelected">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Frame Margin="10,5"
+                               Padding="15"
+                               BorderColor="{StaticResource Gray300}">
+                            <Grid RowDefinitions="Auto,Auto,Auto"
+                                  RowSpacing="10">
+                                <!-- Заголовок и дата -->
+                                <Grid Grid.Row="0" 
+                                      ColumnDefinitions="*,Auto">
+                                    <Label Text="{Binding Name}"
+                                           FontSize="18"
+                                           FontAttributes="Bold"/>
+                                    <Label Grid.Column="1"
+                                           Text="{Binding CreatedAt, StringFormat='{0:dd.MM.yyyy}'}"
+                                           TextColor="{StaticResource Gray600}"/>
+                                </Grid>
+
+                                <!-- Описание -->
+                                <Label Grid.Row="1"
+                                       Text="{Binding Description}"
+                                       LineBreakMode="WordWrap"/>
+
+                                <!-- Информация о преподавателях и студентах -->
+                                <Grid Grid.Row="2"
+                                      ColumnDefinitions="*,Auto">
+                                    <VerticalStackLayout Grid.Column="0">
+                                        <Label Text="Преподаватели:"
+                                               FontAttributes="Bold"
+                                               Margin="0,0,0,5"/>
+                                        <CollectionView ItemsSource="{Binding Teachers}"
+                                                      HeightRequest="60">
+                                            <CollectionView.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Label Text="{Binding FullName}"
+                                                           TextColor="{StaticResource Primary}"/>
+                                                </DataTemplate>
+                                            </CollectionView.ItemTemplate>
+                                        </CollectionView>
+                                    </VerticalStackLayout>
+
+                                    <VerticalStackLayout Grid.Column="1"
+                                                       HorizontalOptions="End">
+                                        <Label Text="Студентов:"
+                                               FontAttributes="Bold"/>
+                                        <Label Text="{Binding StudentsCount}"
+                                               HorizontalOptions="Center"/>
+                                    </VerticalStackLayout>
+                                </Grid>
+                            </Grid>
+                        </Frame>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </RefreshView>
+
+        <!-- Индикатор загрузки -->
+        <ActivityIndicator Grid.RowSpan="2"
+                          x:Name="LoadingIndicator"
+                          IsVisible="false"
+                          IsRunning="{Binding Source={RelativeSource Self}, Path=IsVisible}"
+                          HorizontalOptions="Center"
+                          VerticalOptions="Center"/>
+    </Grid>
 </ContentPage>

@@ -75,14 +75,9 @@
 	<ItemGroup Condition="$(TargetFramework.Contains('-windows'))">
 		<PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.250513003" />
 	</ItemGroup>
-	<ItemGroup>
-	  <Compile Update="Views\AssigntmentsPage.xaml.cs">
-	    <DependentUpon>AssigntmentsPage.xaml</DependentUpon>
-	  </Compile>
-	</ItemGroup>
 
 	<ItemGroup>
-	  <MauiXaml Update="Views\AssigntmentsPage.xaml">
+	  <MauiXaml Update="Views\AssignmentsPage.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
 	  <MauiXaml Update="Views\ChatPage.xaml">

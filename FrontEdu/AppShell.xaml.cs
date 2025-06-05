@@ -22,12 +22,15 @@ namespace FrontEdu
         }
         private void RegisterRoutes()
         {
+            // Базовые маршруты (должны быть определены в XAML)
+            Routing.RegisterRoute("MainPage", typeof(MainPage));
+            Routing.RegisterRoute("Login", typeof(LoginPage));
+
             // Регистрация маршрутов для навигации
             Routing.RegisterRoute("MainPage", typeof(MainPage));
             Routing.RegisterRoute("Login", typeof(LoginPage));
             Routing.RegisterRoute("Register", typeof(RegisterPage));
             Routing.RegisterRoute("CoursesPage", typeof(CoursesPage));
-            Routing.RegisterRoute("AssignmentsPage", typeof(AssignmentsPage));
             Routing.RegisterRoute("ProfilePage", typeof(ProfilePage));
             Routing.RegisterRoute("SettingsPage", typeof(SettingsPage));
             Routing.RegisterRoute("UsersPage", typeof(UsersPage));
@@ -36,6 +39,11 @@ namespace FrontEdu
             Routing.RegisterRoute("ChatPage", typeof(ChatPage));
             Routing.RegisterRoute("GroupChatsPage", typeof(GroupChatsPage));
             Routing.RegisterRoute("ProfileViewPage", typeof(ProfileViewPage));
+            Routing.RegisterRoute("AssignmentsPage", typeof(AssignmentsPage));
+            //Routing.RegisterRoute("AssignmentDetailsPage", typeof(AssignmentDetailsPage));
+
+
+
         }
 
         private async void SetupMenu()
