@@ -13,7 +13,7 @@ namespace FrontEdu.Models.Course
         public string Name { get; set; }
         public string Description { get; set; }
         public bool IsActive { get; set; }
-        public SubjectInfo Subject { get; set; }
+        public SubjectCourseInfo Subject { get; set; }
         public List<TeacherInfo> Teachers { get; set; }
         public List<StudentInfo> Students { get; set; }
         public int StudentsCount { get; set; }

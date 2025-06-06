@@ -29,7 +29,9 @@
         <!-- Список предметов -->
         <RefreshView Grid.Row="1"
                      x:Name="SubjectsRefreshView">
-            <CollectionView x:Name="SubjectsCollection">
+            <CollectionView x:Name="SubjectsCollection"
+                            SelectionMode="Single"
+                            SelectionChanged="OnSubjectSelected">
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
                         <Frame Margin="10,5"

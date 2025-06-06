@@ -9,6 +9,11 @@ using System.Net.Http.Json;
 namespace FrontEdu.Views;
 
 // Views/CoursesPage.xaml.cs
+
+[QueryProperty(nameof(SubjectId), "subjectId")]
+[QueryProperty(nameof(SubjectName), "subjectName")]
+[QueryProperty(nameof(SubjectCode), "subjectCode")]
+[QueryProperty(nameof(SubjectCourses), "courses")]
 public partial class CoursesPage : ContentPage
 {
     private HttpClient _httpClient;
@@ -18,6 +23,21 @@ public partial class CoursesPage : ContentPage
     private bool _isLoading;
     private bool _canManageCourses;
 
+    public int SubjectId { get; set; }
+    public string SubjectName { get; set; }
+    public string SubjectCode { get; set; }
+    public List<SubjectCourseInfo> SubjectCourses { get; set; }
+    private bool _isNavigating;
+    protected override async void OnNavigatedTo(NavigatedToEventArgs args)
+    {
+        base.OnNavigatedTo(args);
+        if (!_isNavigating)
+        {
+            _isNavigating = true;
+            await InitializePage();
+            _isNavigating = false;
+        }
+    }
     public CoursesPage()
     {
         InitializeComponent();
@@ -26,10 +46,22 @@ public partial class CoursesPage : ContentPage
         CoursesCollection.ItemsSource = _courses;
         CoursesRefreshView.Command = new Command(async () => await RefreshCourses());
     }
+
     protected override async void OnAppearing()
     {
         base.OnAppearing();
         await InitializePage();
+    }
+
+    private List<CourseTeacher> ConvertTeachers(List<SubjectTeacherInfo> teachers)
+    {
+        return teachers?.Select(t => new CourseTeacher
+        {
+            Id = t.Id,
+            FullName = t.FullName,
+            Email = t.Email,
+            JoinedAt = DateTime.UtcNow  // Так как в SubjectTeacherInfo нет JoinedAt, используем текущее время
+        }).ToList() ?? new List<CourseTeacher>();
     }
 
     private async Task InitializePage()
@@ -38,7 +70,6 @@ public partial class CoursesPage : ContentPage
         {
             LoadingIndicator.IsVisible = true;
 
-            // Пересоздаем HttpClient при каждой инициализации
             _httpClient = await AppConfig.CreateHttpClientAsync();
 
             // Проверяем права на управление курсами
@@ -50,7 +81,32 @@ public partial class CoursesPage : ContentPage
                 AddCourseButton.IsVisible = _canManageCourses;
             }
 
-            await LoadCourses();
+            // Если есть переданные курсы, отображаем их
+            if (SubjectCourses != null)
+            {
+                await MainThread.InvokeOnMainThreadAsync(() =>
+                {
+                    Title = $"Курсы предмета {SubjectName}";
+                    _allCourses.Clear();
+                    foreach (var course in SubjectCourses)
+                    {
+                        _allCourses.Add(new CourseResponse
+                        {
+                            Id = course.Id,
+                            Name = course.Name,
+                            Description = course.Description,
+                            CreatedAt = course.CreatedAt,
+                            Teachers = ConvertTeachers(course.Teachers), // Используем метод конвертации
+                            StudentsCount = course.StudentsCount
+                        });
+                    }
+                    ApplyFilter();
+                });
+            }
+            else
+            {
+                await LoadCourses();
+            }
         }
         catch (Exception ex)
         {
@@ -86,20 +142,34 @@ public partial class CoursesPage : ContentPage
             _isLoading = true;
             LoadingIndicator.IsVisible = true;
 
-            var response = await _httpClient.GetAsync("api/Course");
+            // Используем SubjectId для получения курсов конкретного предмета
+            var response = await _httpClient.GetAsync($"api/Subject/{SubjectId}/courses");
             if (response.IsSuccessStatusCode)
             {
-                var courses = await response.Content.ReadFromJsonAsync<List<CourseResponse>>();
-
-                await MainThread.InvokeOnMainThreadAsync(() =>
+                var subjectCourses = await response.Content.ReadFromJsonAsync<SubjectCoursesResponse>();
+                if (subjectCourses != null)
                 {
-                    _allCourses.Clear();
-                    foreach (var course in courses ?? Enumerable.Empty<CourseResponse>())
+                    await MainThread.InvokeOnMainThreadAsync(() =>
                     {
-                        _allCourses.Add(course);
-                    }
-                    ApplyFilter();
-                });
+                        // Обновляем заголовок страницы
+                        Title = $"Курсы предмета {subjectCourses.Name}";
+
+                        _allCourses.Clear();
+                        foreach (var course in subjectCourses.Courses ?? Enumerable.Empty<SubjectCourseInfo>())
+                        {
+                            _allCourses.Add(new CourseResponse
+                            {
+                                Id = course.Id,
+                                Name = course.Name,
+                                Description = course.Description,
+                                CreatedAt = course.CreatedAt,
+                                Teachers = ConvertTeachers(course.Teachers),
+                                StudentsCount = course.StudentsCount
+                            });
+                        }
+                        ApplyFilter();
+                    });
+                }
             }
             else
             {

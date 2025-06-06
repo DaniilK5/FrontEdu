@@ -11,8 +11,8 @@ namespace FrontEdu.Views
     public partial class SubjectsPage : ContentPage
     {
         private HttpClient _httpClient;
-        private ObservableCollection<SubjectInfo> _subjects;
-        private ObservableCollection<SubjectInfo> _allSubjects;
+        private ObservableCollection<SubjectCourseInfo> _subjects;
+        private ObservableCollection<SubjectCourseInfo> _allSubjects;
         private string _searchQuery = string.Empty;
         private bool _isLoading;
         private bool _canManageSubjects;
@@ -20,8 +20,8 @@ namespace FrontEdu.Views
         public SubjectsPage()
         {
             InitializeComponent();
-            _subjects = new ObservableCollection<SubjectInfo>();
-            _allSubjects = new ObservableCollection<SubjectInfo>();
+            _subjects = new ObservableCollection<SubjectCourseInfo>();
+            _allSubjects = new ObservableCollection<SubjectCourseInfo>();
             SubjectsCollection.ItemsSource = _subjects;
             SubjectsRefreshView.Command = new Command(async () => await RefreshSubjects());
         }
@@ -62,6 +62,75 @@ namespace FrontEdu.Views
             }
         }
 
+        private async void OnSubjectSelected(object sender, SelectionChangedEventArgs e)
+        {
+            if (e.CurrentSelection.FirstOrDefault() is SubjectCourseInfo selectedSubject)
+            {
+                try
+                {
+                    SubjectsCollection.SelectedItem = null;
+
+                    // Загружаем курсы предмета
+                    var response = await _httpClient.GetAsync($"api/Subject/{selectedSubject.Id}/courses");
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var subjectCourses = await response.Content.ReadFromJsonAsync<SubjectCoursesResponse>();
+                        if (subjectCourses != null)
+                        {
+                            // Создаем параметры навигации
+                            var navigationParameter = new Dictionary<string, object>
+                    {
+                        { "subjectId", selectedSubject.Id },
+                        { "subjectName", subjectCourses.Name },
+                        { "subjectCode", subjectCourses.Code },
+                        { "courses", subjectCourses.Courses }
+                    };
+
+                            // Используем относительную навигацию с явным маршрутом
+                            try
+                            {
+                                await Shell.Current.GoToAsync($"///courses", navigationParameter);
+                            }
+                            catch (Exception navEx)
+                            {
+                                Debug.WriteLine($"First navigation attempt failed: {navEx}");
+                                try
+                                {
+                                    await Shell.Current.GoToAsync($"//courses", navigationParameter);
+                                }
+                                catch (Exception altNavEx)
+                                {
+                                    Debug.WriteLine($"Alternative navigation attempt failed: {altNavEx}");
+                                    try
+                                    {
+                                        // Последняя попытка с относительным путём
+                                        await Shell.Current.GoToAsync($"courses", navigationParameter);
+                                    }
+                                    catch (Exception lastNavEx)
+                                    {
+                                        Debug.WriteLine($"Final navigation attempt failed: {lastNavEx}");
+                                        await DisplayAlert("Ошибка", "Не удалось открыть страницу курсов", "OK");
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            await DisplayAlert("Ошибка", "Не удалось загрузить информацию о курсах предмета", "OK");
+                        }
+                    }
+                    else
+                    {
+                        await DisplayAlert("Ошибка", "Не удалось загрузить информацию о курсах предмета", "OK");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Navigation error: {ex}");
+                    await DisplayAlert("Ошибка", "Не удалось открыть курсы предмета", "OK");
+                }
+            }
+        }
         private async Task LoadSubjects()
         {
             if (_isLoading || _httpClient == null) return;
@@ -74,12 +143,12 @@ namespace FrontEdu.Views
                 var response = await _httpClient.GetAsync("api/Subject?includeCourses=false");
                 if (response.IsSuccessStatusCode)
                 {
-                    var subjects = await response.Content.ReadFromJsonAsync<List<SubjectInfo>>();
+                    var subjects = await response.Content.ReadFromJsonAsync<List<SubjectCourseInfo>>();
 
                     await MainThread.InvokeOnMainThreadAsync(() =>
                     {
                         _allSubjects.Clear();
-                        foreach (var subject in subjects ?? Enumerable.Empty<SubjectInfo>())
+                        foreach (var subject in subjects ?? Enumerable.Empty<SubjectCourseInfo>())
                         {
                             _allSubjects.Add(subject);
                         }
@@ -111,7 +180,6 @@ namespace FrontEdu.Views
                 ? _allSubjects
                 : _allSubjects.Where(s =>
                     s.Name.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase) ||
-                    s.Code.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase) ||
                     s.Description.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase));
 
             foreach (var subject in filteredSubjects)

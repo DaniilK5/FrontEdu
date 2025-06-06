@@ -30,7 +30,7 @@ namespace FrontEdu
             Routing.RegisterRoute("MainPage", typeof(MainPage));
             Routing.RegisterRoute("Login", typeof(LoginPage));
             Routing.RegisterRoute("Register", typeof(RegisterPage));
-            Routing.RegisterRoute("CoursesPage", typeof(CoursesPage));
+
             Routing.RegisterRoute("ProfilePage", typeof(ProfilePage));
             Routing.RegisterRoute("SettingsPage", typeof(SettingsPage));
             Routing.RegisterRoute("UsersPage", typeof(UsersPage));
@@ -44,6 +44,10 @@ namespace FrontEdu
 
             Routing.RegisterRoute("SubjectsPage", typeof(SubjectsPage));
 
+            Routing.RegisterRoute("SubjectPage", typeof(SubjectPage));
+            Routing.RegisterRoute("courses", typeof(CoursesPage));
+            Routing.RegisterRoute("//courses", typeof(CoursesPage));
+            Routing.RegisterRoute("///courses", typeof(CoursesPage));
         }
 
         private async void SetupMenu()
