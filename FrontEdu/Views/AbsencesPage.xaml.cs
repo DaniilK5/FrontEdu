@@ -34,11 +34,8 @@ public partial class AbsencesPage : ContentPage
         BindingContext = _viewModel;
         
         // Инициализация коллекций
-        _students = new ObservableCollection<StudentAbsenceStatistics>();
+        _students = _viewModel.Students;
         _allStudents = new ObservableCollection<StudentAbsenceStatistics>();
-        
-        // Установка источника данных
-        StudentsCollection.ItemsSource = _students;
         
         // Установка начальных дат
         StartDatePicker.Date = DateTime.Today.AddMonths(-1);
@@ -48,6 +45,104 @@ public partial class AbsencesPage : ContentPage
 
         // Установка начального значения
         _currentGroupId = 1;
+    }
+    // Добавьте новый метод для обновления UI при выборе конкретной группы
+
+    private void UpdateUIForSingleGroup(GroupAbsenceResponse groupStatistics)
+    {
+        _viewModel.GroupName = groupStatistics.GroupName;
+        _viewModel.TotalStudents = groupStatistics.TotalStudents;
+        _viewModel.TotalAbsenceHours = groupStatistics.TotalAbsenceHours;
+        _viewModel.ExcusedHours = groupStatistics.ExcusedHours;
+        _viewModel.UnexcusedHours = groupStatistics.UnexcusedHours;
+        _viewModel.AverageAbsenceHours = groupStatistics.AverageAbsenceHours;
+
+        _allStudents.Clear();
+        if (groupStatistics.StudentStatistics != null)
+        {
+            foreach (var student in groupStatistics.StudentStatistics)
+            {
+                var studentStats = new StudentAbsenceStatistics
+                {
+                    StudentId = student.StudentId,
+                    Student = student.Student,
+                    TotalHours = student.TotalHours,
+                    ExcusedHours = student.ExcusedHours,
+                    UnexcusedHours = student.UnexcusedHours
+                };
+                _allStudents.Add(studentStats);
+            }
+        }
+
+        // Принудительно вызываем обновление фильтра
+        ApplyFilter();
+
+        // Для отладки
+        Debug.WriteLine($"Updated UI for group {groupStatistics.GroupName}");
+        Debug.WriteLine($"Total students with absences: {_allStudents.Count}");
+        Debug.WriteLine($"Filtered students: {_viewModel.Students.Count}");
+    }
+
+    private void UpdateUIForAllGroups(GroupsStatisticsResponse statistics)
+    {
+        if (statistics == null)
+        {
+            ShowEmptyGroupStatistics();
+            return;
+        }
+
+        _viewModel.GroupName = "Все группы";
+
+        if (statistics.TotalStatistics != null)
+        {
+            _viewModel.TotalStudents = statistics.TotalStatistics.TotalStudents;
+            _viewModel.TotalAbsenceHours = statistics.TotalStatistics.TotalAbsenceHours;
+            _viewModel.AverageAbsenceHours = statistics.TotalStatistics.AverageAbsenceHoursPerGroup;
+            _viewModel.ExcusedHours = statistics.TotalStatistics.ExcusedHours;
+            _viewModel.UnexcusedHours = statistics.TotalStatistics.UnexcusedHours;
+        }
+        else
+        {
+            _viewModel.TotalStudents = 0;
+            _viewModel.TotalAbsenceHours = 0;
+            _viewModel.AverageAbsenceHours = 0;
+            _viewModel.ExcusedHours = 0;
+            _viewModel.UnexcusedHours = 0;
+        }
+
+        _allStudents.Clear();
+        if (statistics.GroupsDetails != null)
+        {
+            foreach (var groupDetail in statistics.GroupsDetails)
+            {
+                if (groupDetail?.Statistics?.TopAbsentStudents != null)
+                {
+                    foreach (var student in groupDetail.Statistics.TopAbsentStudents)
+                    {
+                        if (student != null && groupDetail.GroupInfo != null)
+                        {
+                            var studentStats = new StudentAbsenceStatistics
+                            {
+                                StudentId = student.StudentId,
+                                Student = $"{student.StudentName} ({groupDetail.GroupInfo.Name})",
+                                TotalHours = student.TotalHours,
+                                ExcusedHours = student.ExcusedHours,
+                                UnexcusedHours = student.UnexcusedHours
+                            };
+                            _allStudents.Add(studentStats);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Принудительно вызываем обновление фильтра
+        ApplyFilter();
+
+        // Для отладки
+        Debug.WriteLine($"Updated UI for all groups");
+        Debug.WriteLine($"Total students with absences: {_allStudents.Count}");
+        Debug.WriteLine($"Filtered students: {_viewModel.Students.Count}");
     }
 
     protected override async void OnAppearing()
@@ -70,9 +165,13 @@ public partial class AbsencesPage : ContentPage
                 var permissions = await permissionsResponse.Content.ReadFromJsonAsync<UserPermissionsResponse>();
                 _canManageStudents = permissions?.Permissions.ManageStudents ?? false;
                 _userRole = permissions?.Role;
-
-                // Обновляем ViewModel вместо установки BindingContext
                 _viewModel.CanManageStudents = _canManageStudents;
+
+                // Загружаем список групп для администраторов и преподавателей
+                if (_userRole?.ToLower() is "administrator" or "teacher")
+                {
+                    await LoadGroups();
+                }
             }
 
             // Загружаем данные в зависимости от роли
@@ -110,74 +209,52 @@ public partial class AbsencesPage : ContentPage
             _isLoading = true;
             LoadingIndicator.IsVisible = true;
 
-            // Преобразуем даты в UTC
+            // Преобразуем даты в UTC и устанавливаем время начала/конца дня
             var startDate = _startDate?.ToUniversalTime().Date;
-            var endDate = _endDate?.ToUniversalTime().Date;
+            var endDate = _endDate?.ToUniversalTime().Date.AddDays(1).AddTicks(-1);
 
-            // Формируем строку запроса с UTC датами
+            // Формируем строку запроса с UTC датами в ISO формате
             var queryParams = new List<string>();
             if (startDate.HasValue)
-                queryParams.Add($"startDate={startDate.Value:yyyy-MM-ddTHH:mm:ssZ}");
+                queryParams.Add($"startDate={startDate.Value:o}");
             if (endDate.HasValue)
-                queryParams.Add($"endDate={endDate.Value:yyyy-MM-ddTHH:mm:ssZ}");
+                queryParams.Add($"endDate={endDate.Value:o}");
 
             var queryString = queryParams.Any() ? $"?{string.Join("&", queryParams)}" : string.Empty;
-
-            _currentGroupId = 1;
 
             if (_httpClient == null)
             {
                 _httpClient = await AppConfig.CreateHttpClientAsync();
             }
 
-            var response = await _httpClient.GetAsync($"api/Absence/group/{_currentGroupId}/statistics{queryString}");
+            // Выбираем endpoint в зависимости от выбранной группы
+            string endpoint = _currentGroupId == 0 
+                ? $"api/Absence/groups/statistics{queryString}"
+                : $"api/Absence/group/{_currentGroupId}/statistics{queryString}";
+
+            Debug.WriteLine($"Requesting: {endpoint}"); // Для отладки
+
+            var response = await _httpClient.GetAsync(endpoint);
+            var content = await response.Content.ReadAsStringAsync();
+            Debug.WriteLine($"Response: {content}"); // Для отладки
+
             if (response.IsSuccessStatusCode)
             {
-                var statistics = await response.Content.ReadFromJsonAsync<GroupAbsenceStatistics>();
-                if (statistics != null)
+                if (_currentGroupId == 0)
                 {
-                    await MainThread.InvokeOnMainThreadAsync(() =>
+                    var statistics = await response.Content.ReadFromJsonAsync<GroupsStatisticsResponse>();
+                    if (statistics != null)
                     {
-                        try
-                        {
-                            Title = $"Пропуски - Группа {statistics.GroupName ?? "Неизвестная"}";
-
-                            // Обновляем данные в ViewModel
-                            _viewModel.GroupName = statistics.GroupName ?? "Неизвестная";
-                            _viewModel.TotalStudents = statistics.TotalStudents;
-                            _viewModel.TotalAbsenceHours = statistics.TotalAbsenceHours;
-                            _viewModel.AverageAbsenceHours = statistics.AverageAbsenceHours;
-                            _viewModel.ExcusedHours = statistics.ExcusedHours;
-                            _viewModel.UnexcusedHours = statistics.UnexcusedHours;
-
-                            // Обновляем список студентов
-                            _allStudents.Clear();
-                            if (statistics.StudentStatistics != null)
-                            {
-                                foreach (var student in statistics.StudentStatistics)
-                                {
-                                    if (student != null)
-                                    {
-                                        _allStudents.Add(student);
-                                    }
-                                }
-                            }
-
-                            ApplyFilter();
-                        }
-                        catch (Exception ex)
-                        {
-                            Debug.WriteLine($"Error updating UI: {ex}");
-                            MainThread.BeginInvokeOnMainThread(async () =>
-                            {
-                                await DisplayAlert("Ошибка", "Не удалось обновить информацию на экране", "OK");
-                            });
-                        }
-                    });
+                        await MainThread.InvokeOnMainThreadAsync(() => UpdateUIForAllGroups(statistics));
+                    }
                 }
                 else
                 {
-                    await DisplayAlert("Ошибка", "Получены некорректные данные от сервера", "OK");
+                    var groupStatistics = await response.Content.ReadFromJsonAsync<GroupAbsenceResponse>();
+                    if (groupStatistics != null)
+                    {
+                        await MainThread.InvokeOnMainThreadAsync(() => UpdateUIForSingleGroup(groupStatistics));
+                    }
                 }
             }
             else
@@ -197,6 +274,22 @@ public partial class AbsencesPage : ContentPage
             _isLoading = false;
             LoadingIndicator.IsVisible = false;
         }
+    }
+
+    private void ShowEmptyGroupStatistics()
+    {
+        var selectedGroup = _viewModel.SelectedGroup;
+        if (selectedGroup != null)
+        {
+            _viewModel.GroupName = selectedGroup.Name;
+            _viewModel.TotalStudents = selectedGroup.StudentsCount;
+            _viewModel.TotalAbsenceHours = 0;
+            _viewModel.ExcusedHours = 0;
+            _viewModel.UnexcusedHours = 0;
+            _viewModel.AverageAbsenceHours = 0;
+        }
+        _allStudents.Clear();
+        ApplyFilter();
     }
 
     private async Task LoadChildrenAbsences()
@@ -281,8 +374,7 @@ public partial class AbsencesPage : ContentPage
 
     private void ApplyFilter()
     {
-        _students.Clear();
-        var filteredStudents = _allStudents.ToList(); // Преобразуем в List для дальнейшей работы
+        var filteredStudents = _allStudents.ToList();
 
         // Применяем текстовый поиск
         if (!string.IsNullOrWhiteSpace(_searchQuery))
@@ -299,10 +391,18 @@ public partial class AbsencesPage : ContentPage
                 (_showUnexcused && s.UnexcusedHours > 0)).ToList();
         }
 
-        foreach (var student in filteredStudents)
+        // Обновляем коллекцию через ViewModel
+        MainThread.BeginInvokeOnMainThread(() =>
         {
-            _students.Add(student);
-        }
+            _viewModel.Students.Clear();
+            foreach (var student in filteredStudents)
+            {
+                _viewModel.Students.Add(student);
+            }
+        });
+
+        // Для отладки
+        Debug.WriteLine($"Applied filter. Total students: {filteredStudents.Count}");
     }
 
     private void OnSearchTextChanged(object sender, TextChangedEventArgs e)
@@ -320,11 +420,55 @@ public partial class AbsencesPage : ContentPage
 
     private async void OnGroupSelected(object sender, EventArgs e)
     {
-        if (GroupPicker.SelectedItem is string groupName)
+        if (_viewModel.SelectedGroup != null)
         {
-            // Здесь нужно добавить логику получения ID группы по её имени
-            await LoadGroupStatistics();
+            _currentGroupId = _viewModel.SelectedGroup.Id;
+            await LoadGroupStatistics(); // Используем единый метод для загрузки статистики
         }
+    }
+
+    private void UpdateUIForSelectedGroup(GroupDetail groupDetail)
+    {
+        if (groupDetail?.GroupInfo == null || groupDetail.Statistics == null)
+        {
+            ShowEmptyGroupStatistics();
+            return;
+        }
+
+        _viewModel.GroupName = groupDetail.GroupInfo.Name;
+        _viewModel.TotalStudents = groupDetail.GroupInfo.StudentsCount;
+        _viewModel.TotalAbsenceHours = groupDetail.Statistics.TotalAbsenceHours;
+        _viewModel.ExcusedHours = groupDetail.Statistics.ExcusedHours;
+        _viewModel.UnexcusedHours = groupDetail.Statistics.UnexcusedHours;
+        _viewModel.AverageAbsenceHours = groupDetail.Statistics.AverageAbsenceHoursPerStudent;
+
+        _allStudents.Clear();
+        if (groupDetail.Statistics.TopAbsentStudents != null)
+        {
+            foreach (var student in groupDetail.Statistics.TopAbsentStudents)
+            {
+                if (student != null)
+                {
+                    var studentStats = new StudentAbsenceStatistics
+                    {
+                        StudentId = student.StudentId,
+                        Student = student.StudentName,
+                        TotalHours = student.TotalHours,
+                        ExcusedHours = student.ExcusedHours,
+                        UnexcusedHours = student.UnexcusedHours
+                    };
+                    _allStudents.Add(studentStats);
+                }
+            }
+        }
+
+        // Принудительно вызываем обновление фильтра
+        ApplyFilter();
+
+        // Для отладки
+        Debug.WriteLine($"Updated UI for group {groupDetail.GroupInfo.Name}");
+        Debug.WriteLine($"Total students in list: {_allStudents.Count}");
+        Debug.WriteLine($"Filtered students: {_students.Count}");
     }
 
     private void OnDateFilterChanged(object sender, DateChangedEventArgs e)
@@ -365,8 +509,50 @@ public partial class AbsencesPage : ContentPage
         {
             LoadingIndicator.IsVisible = true;
 
-            // Получаем ID студента (в реальном приложении нужно добавить выбор студента)
-            int studentId = 1; // TODO: Добавить выбор студента
+            // Получаем список доступных студентов
+            var studentsResponse = await _httpClient.GetAsync("api/Absence/available-students");
+            if (!studentsResponse.IsSuccessStatusCode)
+            {
+                await DisplayAlert("Ошибка", "Не удалось загрузить список студентов", "OK");
+                return;
+            }
+
+            var availableStudents = await studentsResponse.Content.ReadFromJsonAsync<AvailableStudentsResponse>();
+            if (availableStudents?.Groups == null || !availableStudents.Groups.Any())
+            {
+                await DisplayAlert("Ошибка", "Нет доступных студентов", "OK");
+                return;
+            }
+
+            // Создаем список для выбора студента
+            var studentChoices = new List<string>();
+            var studentIds = new List<int>();
+
+            foreach (var group in availableStudents.Groups)
+            {
+                foreach (var student in group.Students)
+                {
+                    studentChoices.Add($"{student.FullName} ({group.GroupName})");
+                    studentIds.Add(student.Id);
+                }
+            }
+
+            // Показываем диалог выбора студента
+            string selectedStudent = await DisplayActionSheet(
+                "Выберите студента",
+                "Отмена",
+                null,
+                studentChoices.ToArray());
+
+            if (selectedStudent == "Отмена" || string.IsNullOrEmpty(selectedStudent))
+                return;
+
+            // Получаем ID выбранного студента
+            int selectedIndex = studentChoices.IndexOf(selectedStudent);
+            if (selectedIndex == -1)
+                return;
+
+            int studentId = studentIds[selectedIndex];
 
             // Получаем количество часов
             string hoursStr = await DisplayPromptAsync(
@@ -441,6 +627,63 @@ public partial class AbsencesPage : ContentPage
         _httpClient = null;
         _isLoading = false;
     }
+
+    private async Task LoadGroups()
+    {
+        try
+        {
+            if (_httpClient == null)
+            {
+                _httpClient = await AppConfig.CreateHttpClientAsync();
+            }
+
+            var response = await _httpClient.GetAsync("api/StudentGroup/list");
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<StudentGroupListResponse>();
+                if (result?.Groups != null)
+                {
+                    await MainThread.InvokeOnMainThreadAsync(() =>
+                    {
+                        _viewModel.Groups.Clear();
+                        // Добавляем опцию "Все группы" только для администраторов
+                        if (_userRole?.ToLower() == "administrator")
+                        {
+                            _viewModel.Groups.Add(new GroupInfo { Id = 0, Name = "Все группы" });
+                        }
+                        
+                        // Добавляем группы из ответа API
+                        foreach (var group in result.Groups.OrderBy(g => g.Name))
+                        {
+                            _viewModel.Groups.Add(new GroupInfo 
+                            { 
+                                Id = group.Id,
+                                Name = group.Name,
+                                Description = group.Description,
+                                StudentsCount = group.StudentsCount,
+                                Curator = group.Curator != null ? new CuratorInfo 
+                                { 
+                                    Id = group.Curator.Id,
+                                    FullName = group.Curator.FullName 
+                                } : null
+                            });
+                        }
+                        
+                        // Устанавливаем начальное значение
+                        _viewModel.SelectedGroup = _viewModel.Groups.FirstOrDefault();
+                    });
+                }
+            }
+            else
+            {
+                Debug.WriteLine($"Error loading groups: {await response.Content.ReadAsStringAsync()}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Error loading groups: {ex}");
+        }
+    }
 }
 
 public class AbsenceStatisticsViewModel : INotifyPropertyChanged
@@ -452,6 +695,9 @@ public class AbsenceStatisticsViewModel : INotifyPropertyChanged
     private int _excusedHours;
     private int _unexcusedHours;
     private bool _canManageStudents;
+    private ObservableCollection<GroupInfo> _groups;
+    private GroupInfo _selectedGroup;
+    private ObservableCollection<StudentAbsenceStatistics> _students;
 
     public string GroupName
     {
@@ -523,6 +769,42 @@ public class AbsenceStatisticsViewModel : INotifyPropertyChanged
         }
     }
 
+    public ObservableCollection<GroupInfo> Groups
+    {
+        get => _groups;
+        set
+        {
+            _groups = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public GroupInfo SelectedGroup
+    {
+        get => _selectedGroup;
+        set
+        {
+            _selectedGroup = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public ObservableCollection<StudentAbsenceStatistics> Students
+    {
+        get => _students;
+        set
+        {
+            _students = value;
+            OnPropertyChanged();
+        }
+    }
+    
+    public AbsenceStatisticsViewModel()
+    {
+        Groups = new ObservableCollection<GroupInfo>();
+        Students = new ObservableCollection<StudentAbsenceStatistics>();
+    }
+
     public event PropertyChangedEventHandler PropertyChanged;
 
     protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
@@ -530,3 +812,141 @@ public class AbsenceStatisticsViewModel : INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 }
+
+// Добавьте эти классы для десериализации ответа API
+public class GroupsStatisticsResponse
+{
+    public TotalStatistics TotalStatistics { get; set; }
+    public List<GroupDetail> GroupsDetails { get; set; }
+}
+
+public class TotalStatistics
+{
+    public int TotalGroups { get; set; }
+    public int TotalStudents { get; set; }
+    public int TotalAbsenceHours { get; set; }
+    public int ExcusedHours { get; set; }
+    public int UnexcusedHours { get; set; }
+    public double AverageAbsenceHoursPerGroup { get; set; }
+    public int GroupsWithNoAbsences { get; set; }
+    public Period Period { get; set; }
+}
+
+public class Period
+{
+    public DateTime? StartDate { get; set; }
+    public DateTime? EndDate { get; set; }
+}
+
+public class GroupDetail
+{
+    public GroupInfo GroupInfo { get; set; }
+    public GroupStatistics Statistics { get; set; }
+}
+
+public class GroupInfo
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public string Description { get; set; }
+    public int StudentsCount { get; set; }
+    public CuratorInfo Curator { get; set; }
+}
+
+public class CuratorInfo
+{
+    public int Id { get; set; }
+    public string FullName { get; set; }
+}
+
+public class GroupStatistics
+{
+    public int TotalAbsenceHours { get; set; }
+    public int ExcusedHours { get; set; }
+    public int UnexcusedHours { get; set; }
+    public double AverageAbsenceHoursPerStudent { get; set; }
+    public int StudentsWithAbsences { get; set; }
+    public List<TopAbsentStudent> TopAbsentStudents { get; set; }
+}
+
+public class TopAbsentStudent
+{
+    public int StudentId { get; set; }
+    public string StudentName { get; set; }
+    public int TotalHours { get; set; }
+    public int ExcusedHours { get; set; }
+    public int UnexcusedHours { get; set; }
+}
+
+// Добавьте эти классы для десериализации ответа API
+public class StudentGroupListResponse
+{
+    public int TotalCount { get; set; }
+    public List<GroupListItem> Groups { get; set; }
+}
+
+public class GroupListItem
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public string Description { get; set; }
+    public int StudentsCount { get; set; }
+    public CuratorBasicInfo Curator { get; set; }
+    public bool HasStudents { get; set; }
+}
+
+public class CuratorBasicInfo
+{
+    public int Id { get; set; }
+    public string FullName { get; set; }
+}
+
+// Добавьте новый класс для ответа API конкретной группы
+public class GroupAbsenceResponse
+{
+    public string GroupName { get; set; }
+    public int TotalStudents { get; set; }
+    public int TotalAbsenceHours { get; set; }
+    public double AverageAbsenceHours { get; set; }
+    public int ExcusedHours { get; set; }
+    public int UnexcusedHours { get; set; }
+    public List<StudentStatistics> StudentStatistics { get; set; }
+}
+
+public class StudentStatistics
+{
+    public int StudentId { get; set; }
+    public string Student { get; set; }
+    public int TotalHours { get; set; }
+    public int ExcusedHours { get; set; }
+    public int UnexcusedHours { get; set; }
+    public List<AbsenceDate> AbsenceDates { get; set; }
+}
+
+// Добавьте эти классы для модели ответа API
+public class AvailableStudentsResponse
+{
+    public int TotalGroups { get; set; }
+    public int TotalStudents { get; set; }
+    public List<AvailableGroup> Groups { get; set; }
+}
+
+public class AvailableGroup
+{
+    public string GroupName { get; set; }
+    public int GroupId { get; set; }
+    public CuratorInfo Curator { get; set; }
+    public List<AvailableStudent> Students { get; set; }
+}
+
+public class AvailableStudent
+{
+    public int Id { get; set; }
+    public string FullName { get; set; }
+    public string StudentId { get; set; }
+    public int TotalAbsenceHours { get; set; }
+    public int ExcusedHours { get; set; }
+    public int UnexcusedHours { get; set; }
+    public List<AbsenceDate> RecentAbsences { get; set; }
+}
+

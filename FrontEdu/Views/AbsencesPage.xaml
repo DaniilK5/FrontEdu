@@ -12,12 +12,16 @@
               ColumnDefinitions="*,*"
               BackgroundColor="{StaticResource Gray200}">
 
+            <!-- Выбор группы -->
             <Picker Grid.Row="0" 
-        Grid.Column="0"
-        x:Name="GroupPicker"
-        Title="Выберите группу"
-        SelectedIndexChanged="OnGroupSelected"
-        IsVisible="{Binding CanManageStudents}"/>
+                    Grid.Column="0"
+                    x:Name="GroupPicker"
+                    Title="Выберите группу"
+                    ItemsSource="{Binding Groups}"
+                    ItemDisplayBinding="{Binding Name}"
+                    SelectedItem="{Binding SelectedGroup}"
+                    SelectedIndexChanged="OnGroupSelected"
+                    IsVisible="{Binding CanManageStudents}"/>
 
             <!-- Фильтр по датам -->
             <HorizontalStackLayout Grid.Row="0" 
@@ -89,18 +93,19 @@
                           Placeholder="Поиск студента"
                           TextChanged="OnSearchTextChanged"/>
                 <Button Grid.Column="1"
-        x:Name="AddAbsenceButton"
-        Text="+"
-        FontSize="20"
-        WidthRequest="50"
-        Margin="5,0,0,0"
-        IsVisible="{Binding CanManageStudents}"
-        Clicked="OnAddAbsenceClicked"/>
+                        x:Name="AddAbsenceButton"
+                        Text="+"
+                        FontSize="20"
+                        WidthRequest="50"
+                        Margin="5,0,0,0"
+                        IsVisible="{Binding CanManageStudents}"
+                        Clicked="OnAddAbsenceClicked"/>
             </Grid>
 
             <!-- Список студентов -->
             <CollectionView Grid.Row="1"
                           x:Name="StudentsCollection"
+                          ItemsSource="{Binding Students}"
                           SelectionMode="Single"
                           SelectionChanged="OnStudentSelected">
                 <CollectionView.ItemTemplate>
