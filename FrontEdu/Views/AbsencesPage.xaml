@@ -5,12 +5,53 @@
              Title="Пропуски">
 
     <Grid RowDefinitions="Auto,Auto,*">
-        <!-- Статистика группы -->
-        <Frame Grid.Row="0" 
+        <!-- Фильтры -->
+        <Grid Grid.Row="0" 
+              Padding="10"
+              RowDefinitions="Auto,Auto"
+              ColumnDefinitions="*,*"
+              BackgroundColor="{StaticResource Gray200}">
+
+            <Picker Grid.Row="0" 
+        Grid.Column="0"
+        x:Name="GroupPicker"
+        Title="Выберите группу"
+        SelectedIndexChanged="OnGroupSelected"
+        IsVisible="{Binding CanManageStudents}"/>
+
+            <!-- Фильтр по датам -->
+            <HorizontalStackLayout Grid.Row="0" 
+                                 Grid.Column="1" 
+                                 Spacing="5">
+                <DatePicker x:Name="StartDatePicker" 
+                           DateSelected="OnDateFilterChanged"/>
+                <DatePicker x:Name="EndDatePicker"
+                           DateSelected="OnDateFilterChanged"/>
+            </HorizontalStackLayout>
+
+            <!-- Фильтры по типу пропуска -->
+            <HorizontalStackLayout Grid.Row="1" 
+                                 Grid.ColumnSpan="2" 
+                                 Spacing="10">
+                <CheckBox x:Name="ExcusedCheckBox" 
+                         IsChecked="True"
+                         CheckedChanged="OnFilterChanged"/>
+                <Label Text="Уважительные"
+                       VerticalOptions="Center"/>
+                <CheckBox x:Name="UnexcusedCheckBox" 
+                         IsChecked="True"
+                         CheckedChanged="OnFilterChanged"/>
+                <Label Text="Неуважительные"
+                       VerticalOptions="Center"/>
+            </HorizontalStackLayout>
+        </Grid>
+
+        <!-- Статистика -->
+        <Frame Grid.Row="1" 
                Margin="10"
                Padding="15"
                BorderColor="{StaticResource Gray300}">
-            <Grid RowDefinitions="Auto,Auto" 
+            <Grid RowDefinitions="Auto,Auto,Auto" 
                   ColumnDefinitions="*,*">
                 <Label Grid.Row="0" 
                        Grid.Column="0"
@@ -28,59 +69,76 @@
                        Grid.Column="1"
                        Text="{Binding UnexcusedHours, StringFormat='Без уважительной: {0}ч'}"
                        TextColor="Red"/>
+                <Label Grid.Row="2" 
+                       Grid.Column="0"
+                       Grid.ColumnSpan="2"
+                       Text="{Binding AverageAbsenceHours, StringFormat='В среднем пропущено: {0}ч'}"
+                       TextColor="{StaticResource Gray600}"/>
             </Grid>
         </Frame>
 
-        <!-- Панель управления -->
-        <Grid Grid.Row="1" 
-              Padding="10"
-              ColumnDefinitions="*,Auto"
-              BackgroundColor="{StaticResource Gray200}">
-            <SearchBar Grid.Column="0"
-                       x:Name="SearchBar"
-                       Placeholder="Поиск студента"
-                       TextChanged="OnSearchTextChanged"/>
-            <Button Grid.Column="1"
-                    x:Name="AddAbsenceButton"
-                    Text="+"
-                    FontSize="20"
-                    WidthRequest="50"
-                    Margin="5,0,0,0"
-                    Clicked="OnAddAbsenceClicked"/>
-        </Grid>
+        <!-- Список студентов -->
+        <Grid Grid.Row="2" 
+              RowDefinitions="Auto,*">
+            <!-- Панель управления -->
+            <Grid ColumnDefinitions="*,Auto"
+                  Padding="10"
+                  BackgroundColor="{StaticResource Gray200}">
+                <SearchBar Grid.Column="0"
+                          x:Name="SearchBar"
+                          Placeholder="Поиск студента"
+                          TextChanged="OnSearchTextChanged"/>
+                <Button Grid.Column="1"
+        x:Name="AddAbsenceButton"
+        Text="+"
+        FontSize="20"
+        WidthRequest="50"
+        Margin="5,0,0,0"
+        IsVisible="{Binding CanManageStudents}"
+        Clicked="OnAddAbsenceClicked"/>
+            </Grid>
 
-        <!-- Список студентов и их пропусков -->
-        <CollectionView Grid.Row="2"
-                       x:Name="StudentsCollection"
-                       SelectionMode="Single"
-                       SelectionChanged="OnStudentSelected">
-            <CollectionView.ItemTemplate>
-                <DataTemplate>
-                    <Frame Margin="10,5"
-                           Padding="15"
-                           BorderColor="{StaticResource Gray300}">
-                        <Grid RowDefinitions="Auto,Auto,Auto">
-                            <Label Grid.Row="0"
-                                   Text="{Binding Student}"
-                                   FontSize="16"
-                                   FontAttributes="Bold"/>
-                            <Grid Grid.Row="1" 
-                                  ColumnDefinitions="*,*">
-                                <Label Grid.Column="0"
-                                       Text="{Binding ExcusedHours, StringFormat='По уважительной: {0}ч'}"
-                                       TextColor="Green"/>
-                                <Label Grid.Column="1"
-                                       Text="{Binding UnexcusedHours, StringFormat='Без уважительной: {0}ч'}"
-                                       TextColor="Red"/>
+            <!-- Список студентов -->
+            <CollectionView Grid.Row="1"
+                          x:Name="StudentsCollection"
+                          SelectionMode="Single"
+                          SelectionChanged="OnStudentSelected">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Frame Margin="10,5"
+                               Padding="15"
+                               BorderColor="{StaticResource Gray300}">
+                            <Grid RowDefinitions="Auto,Auto,Auto">
+                                <Label Grid.Row="0"
+                                       Text="{Binding Student}"
+                                       FontSize="16"
+                                       FontAttributes="Bold"/>
+                                <Grid Grid.Row="1" 
+                                      ColumnDefinitions="*,*">
+                                    <Label Grid.Column="0"
+                                           Text="{Binding ExcusedHours, StringFormat='По уважительной: {0}ч'}"
+                                           TextColor="Green"/>
+                                    <Label Grid.Column="1"
+                                           Text="{Binding UnexcusedHours, StringFormat='Без уважительной: {0}ч'}"
+                                           TextColor="Red"/>
+                                </Grid>
+                                <Label Grid.Row="2"
+                                       Text="{Binding TotalHours, StringFormat='Всего пропущено: {0}ч'}"
+                                       TextColor="{StaticResource Gray600}"/>
                             </Grid>
-                            <Label Grid.Row="2"
-                                   Text="{Binding TotalHours, StringFormat='Всего пропущено: {0}ч'}"
-                                   TextColor="{StaticResource Gray600}"/>
-                        </Grid>
-                    </Frame>
-                </DataTemplate>
-            </CollectionView.ItemTemplate>
-        </CollectionView>
+                        </Frame>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+                <CollectionView.EmptyView>
+                    <StackLayout HorizontalOptions="Center" 
+                               VerticalOptions="Center">
+                        <Label Text="Нет данных о пропусках"
+                               FontSize="18"
+                               TextColor="{StaticResource Gray600}"/>
+                    </StackLayout>
+                </CollectionView.EmptyView>
+            </CollectionView>
+        </Grid>
 
         <!-- Индикатор загрузки -->
         <ActivityIndicator Grid.RowSpan="3"
