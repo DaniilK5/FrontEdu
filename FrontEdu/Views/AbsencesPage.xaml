@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="FrontEdu.Views.AbsencesPage"
+             Title="Пропуски">
+
+    <Grid RowDefinitions="Auto,Auto,*">
+        <!-- Статистика группы -->
+        <Frame Grid.Row="0" 
+               Margin="10"
+               Padding="15"
+               BorderColor="{StaticResource Gray300}">
+            <Grid RowDefinitions="Auto,Auto" 
+                  ColumnDefinitions="*,*">
+                <Label Grid.Row="0" 
+                       Grid.Column="0"
+                       Text="{Binding GroupName, StringFormat='Группа: {0}'}"
+                       FontSize="18"
+                       FontAttributes="Bold"/>
+                <Label Grid.Row="0" 
+                       Grid.Column="1"
+                       Text="{Binding TotalStudents, StringFormat='Всего студентов: {0}'}"/>
+                <Label Grid.Row="1" 
+                       Grid.Column="0"
+                       Text="{Binding ExcusedHours, StringFormat='По уважительной: {0}ч'}"
+                       TextColor="Green"/>
+                <Label Grid.Row="1" 
+                       Grid.Column="1"
+                       Text="{Binding UnexcusedHours, StringFormat='Без уважительной: {0}ч'}"
+                       TextColor="Red"/>
+            </Grid>
+        </Frame>
+
+        <!-- Панель управления -->
+        <Grid Grid.Row="1" 
+              Padding="10"
+              ColumnDefinitions="*,Auto"
+              BackgroundColor="{StaticResource Gray200}">
+            <SearchBar Grid.Column="0"
+                       x:Name="SearchBar"
+                       Placeholder="Поиск студента"
+                       TextChanged="OnSearchTextChanged"/>
+            <Button Grid.Column="1"
+                    x:Name="AddAbsenceButton"
+                    Text="+"
+                    FontSize="20"
+                    WidthRequest="50"
+                    Margin="5,0,0,0"
+                    Clicked="OnAddAbsenceClicked"/>
+        </Grid>
+
+        <!-- Список студентов и их пропусков -->
+        <CollectionView Grid.Row="2"
+                       x:Name="StudentsCollection"
+                       SelectionMode="Single"
+                       SelectionChanged="OnStudentSelected">
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <Frame Margin="10,5"
+                           Padding="15"
+                           BorderColor="{StaticResource Gray300}">
+                        <Grid RowDefinitions="Auto,Auto,Auto">
+                            <Label Grid.Row="0"
+                                   Text="{Binding Student}"
+                                   FontSize="16"
+                                   FontAttributes="Bold"/>
+                            <Grid Grid.Row="1" 
+                                  ColumnDefinitions="*,*">
+                                <Label Grid.Column="0"
+                                       Text="{Binding ExcusedHours, StringFormat='По уважительной: {0}ч'}"
+                                       TextColor="Green"/>
+                                <Label Grid.Column="1"
+                                       Text="{Binding UnexcusedHours, StringFormat='Без уважительной: {0}ч'}"
+                                       TextColor="Red"/>
+                            </Grid>
+                            <Label Grid.Row="2"
+                                   Text="{Binding TotalHours, StringFormat='Всего пропущено: {0}ч'}"
+                                   TextColor="{StaticResource Gray600}"/>
+                        </Grid>
+                    </Frame>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+        <!-- Индикатор загрузки -->
+        <ActivityIndicator Grid.RowSpan="3"
+                          x:Name="LoadingIndicator"
+                          IsVisible="false"
+                          IsRunning="{Binding Source={RelativeSource Self}, Path=IsVisible}"
+                          HorizontalOptions="Center"
+                          VerticalOptions="Center"/>
+    </Grid>
+</ContentPage>

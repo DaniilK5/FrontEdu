@@ -100,6 +100,20 @@
                 </VerticalStackLayout>
             </Frame>
 
+            <!-- В существующем Grid добавьте раздел расписания -->
+            <Frame Padding="15" BorderColor="Gray">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Расписание" 
+                           FontSize="24"
+                           HorizontalOptions="Center"/>
+                    <Button x:Name="AbsencesButton"
+                            Text="Пропуски"
+                            Clicked="OnAbsencesClicked"
+                            IsVisible="False"/>
+                    <!-- Другие кнопки раздела расписания -->
+                </VerticalStackLayout>
+            </Frame>
+
             <Button 
                 Text="Выйти"
                 Clicked="OnLogoutClicked"

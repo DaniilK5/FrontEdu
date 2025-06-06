@@ -65,6 +65,11 @@ namespace FrontEdu.Views
 
                         // Настройки
                         SettingsButton.IsVisible = _userPermissions.Permissions.ManageSettings;
+
+                        // Добавляем проверку разрешений для пропусков
+                        AbsencesButton.IsVisible = _userPermissions.Categories.Schedule.CanView ||
+                                                 _userPermissions.Categories.Schedule.CanManage;
+
                     });
                 }
                 else
@@ -84,6 +89,10 @@ namespace FrontEdu.Views
             await Shell.Current.GoToAsync("//CoursesPage");
         }
 
+        private async void OnAbsencesClicked(object sender, EventArgs e)
+        {
+            await Shell.Current.GoToAsync("//AbsencesPage");
+        }
         private async void OnAssignmentsClicked(object sender, EventArgs e)
         {
             await Shell.Current.GoToAsync("//AssignmentsPage");

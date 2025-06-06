@@ -44,7 +44,7 @@ namespace FrontEdu.Models.Auth
         public MessagesCategory Messages { get; set; }
         public ReportsCategory Reports { get; set; }
         public AssignmentsCategory Assignments { get; set; }
-        public StudentsCategory Students { get; set; }
+        public StudentsCategory Students { get; set; }}
     }
 
     public class UserCategory { public bool CanManage { get; set; } }
@@ -55,5 +55,3 @@ namespace FrontEdu.Models.Auth
     public class ReportsCategory { public bool CanManage { get; set; } public bool CanView { get; set; } }
     public class AssignmentsCategory { public bool CanManage { get; set; } public bool CanView { get; set; } public bool CanSubmit { get; set; } }
     public class StudentsCategory { public bool CanManage { get; set; } public bool CanViewDetails { get; set; } }
-
-}

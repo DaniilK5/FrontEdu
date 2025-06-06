@@ -48,6 +48,8 @@ namespace FrontEdu
             Routing.RegisterRoute("courses", typeof(CoursesPage));
             Routing.RegisterRoute("//courses", typeof(CoursesPage));
             Routing.RegisterRoute("///courses", typeof(CoursesPage));
+
+            Routing.RegisterRoute("AbsencesPage", typeof(AbsencesPage));
         }
 
         private async void SetupMenu()
@@ -248,6 +250,18 @@ namespace FrontEdu
                     Title = "Задания",
                     Route = "AssignmentsPage",
                     ContentTemplate = new DataTemplate(typeof(AssignmentsPage))
+                });
+            }
+
+            // Добавляем пункт меню пропусков если есть права
+            if (_userPermissions.Categories.Schedule.CanView || 
+                _userPermissions.Categories.Schedule.CanManage)
+            {
+                tab.Items.Add(new ShellContent
+                {
+                    Title = "Пропуски",
+                    Route = "AbsencesPage",
+                    ContentTemplate = new DataTemplate(typeof(AbsencesPage))
                 });
             }
 
