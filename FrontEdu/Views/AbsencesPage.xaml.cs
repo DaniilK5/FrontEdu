@@ -489,20 +489,50 @@ public partial class AbsencesPage : ContentPage
             StudentsCollection.SelectedItem = null;
             try
             {
-                var parameters = new Dictionary<string, object>
+                LoadingIndicator.IsVisible = true;
+
+                var response = await _httpClient.GetAsync($"api/Absence/student/{selectedStudent.StudentId}");
+                if (response.IsSuccessStatusCode)
+                {
+                    var details = await response.Content.ReadFromJsonAsync<AbsenceDetailResponse>();
+                    if (details != null)
                     {
-                        { "studentId", selectedStudent.StudentId }
-                    };
-                await Shell.Current.GoToAsync($"AbsenceDetailsPage", parameters);
+                        var absenceList = string.Join("\n", details.Absences.OrderByDescending(a => a.Date).Select(a =>
+                            $"Дата: {a.Date:dd.MM.yyyy}\n" +
+                            $"Часов: {a.Hours}\n" +
+                            $"Причина: {a.Reason}\n" +
+                            $"{(a.IsExcused ? "Уважительная" : "Неуважительная")}" +
+                            $"{(!string.IsNullOrEmpty(a.Comment) ? $"\nКомментарий: {a.Comment}" : "")}\n" +
+                            $"Преподаватель: {a.Instructor.FullName}\n"));
+
+                        string message =
+                            $"Студент: {details.StudentInfo.FullName}\n" +
+                            $"Всего пропущено: {details.TotalHours}ч\n" +
+                            $"По уважительной: {details.ExcusedHours}ч\n" +
+                            $"Без уважительной: {details.UnexcusedHours}ч\n\n" +
+                            "История пропусков:\n" +
+                            $"{absenceList}";
+
+                        await DisplayAlert("Информация о пропусках", message, "OK");
+                    }
+                }
+                else
+                {
+                    var error = await response.Content.ReadAsStringAsync();
+                    await DisplayAlert("Ошибка", "Не удалось загрузить детали пропусков", "OK");
+                }
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Navigation error: {ex}");
-                await DisplayAlert("Ошибка", "Не удалось открыть детали пропусков", "OK");
+                Debug.WriteLine($"Error loading absence details: {ex}");
+                await DisplayAlert("Ошибка", "Не удалось загрузить детали пропусков", "OK");
+            }
+            finally
+            {
+                LoadingIndicator.IsVisible = false;
             }
         }
     }
-
     private async void OnAddAbsenceClicked(object sender, EventArgs e)
     {
         try
