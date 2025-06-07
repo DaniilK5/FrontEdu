@@ -537,66 +537,100 @@ public partial class AbsencesPage : ContentPage
         Debug.WriteLine($"Filtered students: {_students.Count}");
     }
 
-    private void OnDateFilterChanged(object sender, DateChangedEventArgs e)
-    {
-        if (sender == StartDatePicker)
-            _startDate = e.NewDate;
-        else if (sender == EndDatePicker)
-            _endDate = e.NewDate;
+private async void OnDateFilterChanged(object sender, DateChangedEventArgs e)
+{
+    if (sender == StartDatePicker)
+        _startDate = e.NewDate;
+    else if (sender == EndDatePicker)
+        _endDate = e.NewDate;
 
-        // Перезагружаем данные с новыми датами
-        _ = LoadGroupStatistics();
-    }
-
-    private async void OnStudentSelected(object sender, SelectionChangedEventArgs e)
+    // Перезагружаем данные с новыми датами в зависимости от роли
+    switch (_userRole?.ToLower())
     {
-        if (e.CurrentSelection.FirstOrDefault() is StudentAbsenceStatistics selectedStudent)
-        {
-            StudentsCollection.SelectedItem = null;
-            try
+        case "administrator":
+        case "teacher":
+            await LoadGroupStatistics();
+            break;
+        case "parent":
+            await LoadChildrenAbsences();
+            break;
+        case "student":
+            // Если группа не установлена, получаем её
+            if (_currentGroupId <= 0)
             {
-                LoadingIndicator.IsVisible = true;
-
-                var response = await _httpClient.GetAsync($"api/Absence/student/{selectedStudent.StudentId}");
-                if (response.IsSuccessStatusCode)
+                try
                 {
-                    var details = await response.Content.ReadFromJsonAsync<AbsenceDetailResponse>();
-                    if (details != null)
+                    var response = await _httpClient.GetAsync("api/StudentGroup/list");
+                    if (response.IsSuccessStatusCode)
                     {
-                        var absenceList = string.Join("\n", details.Absences.OrderByDescending(a => a.Date).Select(a =>
-                            $"Дата: {a.Date:dd.MM.yyyy}\n" +
-                            $"Часов: {a.Hours}\n" +
-                            $"Причина: {a.Reason}\n" +
-                            $"{(a.IsExcused ? "Уважительная" : "Неуважительная")}" +
-                            $"{(!string.IsNullOrEmpty(a.Comment) ? $"\nКомментарий: {a.Comment}" : "")}\n" +
-                            $"Преподаватель: {a.Instructor.FullName}\n"));
-
-                        string message =
-                            $"Студент: {details.StudentInfo.FullName}\n" +
-                            $"Всего пропущено: {details.TotalHours}ч\n" +
-                            $"По уважительной: {details.ExcusedHours}ч\n" +
-                            $"Без уважительной: {details.UnexcusedHours}ч\n\n" +
-                            "История пропусков:\n" +
-                            $"{absenceList}";
-
-                        await DisplayAlert("Информация о пропусках", message, "OK");
+                        var result = await response.Content.ReadFromJsonAsync<StudentGroupListResponse>();
+                        if (result?.Groups?.Any() == true)
+                        {
+                            _currentGroupId = result.Groups[0].Id; // Берём ID первой группы
+                        }
                     }
                 }
-                else
+                catch (Exception ex)
                 {
-                    var error = await response.Content.ReadAsStringAsync();
-                    await DisplayAlert("Ошибка", "Не удалось загрузить детали пропусков", "OK");
+                    Debug.WriteLine($"Error getting student group: {ex}");
                 }
             }
-            catch (Exception ex)
+            await LoadStudentAbsences();
+            break;
+    }
+}
+    private async void OnStudentSelected(object sender, SelectionChangedEventArgs e)
+    {
+        // Сразу получаем выбранного студента и очищаем выделение
+        var selectedStudent = e.CurrentSelection.FirstOrDefault() as StudentAbsenceStatistics;
+        if (selectedStudent == null) return;
+
+        // Очищаем выделение после получения данных о студенте
+        await MainThread.InvokeOnMainThreadAsync(() => StudentsCollection.SelectedItem = null);
+
+        try
+        {
+            LoadingIndicator.IsVisible = true;
+
+            var response = await _httpClient.GetAsync($"api/Absence/student/{selectedStudent.StudentId}");
+            if (response.IsSuccessStatusCode)
             {
-                Debug.WriteLine($"Error loading absence details: {ex}");
+                var details = await response.Content.ReadFromJsonAsync<AbsenceDetailResponse>();
+                if (details != null)
+                {
+                    var absenceList = string.Join("\n", details.Absences.OrderByDescending(a => a.Date).Select(a =>
+                        $"Дата: {a.Date:dd.MM.yyyy}\n" +
+                        $"Часов: {a.Hours}\n" +
+                        $"Причина: {a.Reason}\n" +
+                        $"{(a.IsExcused ? "Уважительная" : "Неуважительная")}" +
+                        $"{(!string.IsNullOrEmpty(a.Comment) ? $"\nКомментарий: {a.Comment}" : "")}\n" +
+                        $"Преподаватель: {a.Instructor.FullName}\n"));
+
+                    string message =
+                        $"Студент: {details.StudentInfo.FullName}\n" +
+                        $"Всего пропущено: {details.TotalHours}ч\n" +
+                        $"По уважительной: {details.ExcusedHours}ч\n" +
+                        $"Без уважительной: {details.UnexcusedHours}ч\n\n" +
+                        "История пропусков:\n" +
+                        $"{absenceList}";
+
+                    await DisplayAlert("Информация о пропусках", message, "OK");
+                }
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
                 await DisplayAlert("Ошибка", "Не удалось загрузить детали пропусков", "OK");
             }
-            finally
-            {
-                LoadingIndicator.IsVisible = false;
-            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Error loading absence details: {ex}");
+            await DisplayAlert("Ошибка", "Не удалось загрузить детали пропусков", "OK");
+        }
+        finally
+        {
+            LoadingIndicator.IsVisible = false;
         }
     }
     private async void OnAddAbsenceClicked(object sender, EventArgs e)
