@@ -38,13 +38,15 @@ public partial class AssignmentsPage : ContentPage
             _assignments = new ObservableCollection<AssignmentResponse>();
             AssignmentsCollection.ItemsSource = _assignments;
             AssignmentsRefreshView.Command = new Command(async () => await LoadAssignments());
+
+            // Добавляем обработчик нажатия кнопки назад
+
         }
         catch (Exception ex)
         {
             Debug.WriteLine($"AssignmentsPage constructor error: {ex}");
         }
     }
-
     protected override async void OnAppearing()
     {
         base.OnAppearing();
@@ -107,6 +109,7 @@ public partial class AssignmentsPage : ContentPage
     protected override void OnDisappearing()
     {
         base.OnDisappearing();
+        
         ResetState();
     }
 
@@ -301,5 +304,26 @@ public partial class AssignmentsPage : ContentPage
         {
             LoadingIndicator.IsVisible = false;
         }
+    }
+
+    protected override bool OnBackButtonPressed()
+    {
+        Debug.WriteLine("Back button pressed in AssignmentsPage");
+        
+        MainThread.BeginInvokeOnMainThread(async () =>
+        {
+            try
+            {
+                Debug.WriteLine("Attempting to navigate to MainPage");
+                await Shell.Current.GoToAsync("///MainPage");
+                Debug.WriteLine("Successfully navigated to MainPage");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error navigating to MainPage: {ex.Message}");
+            }
+        });
+        
+        return true; // Предотвращаем стандартную обработку кнопки назад
     }
 }

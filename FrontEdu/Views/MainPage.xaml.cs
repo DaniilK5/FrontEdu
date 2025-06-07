@@ -86,26 +86,26 @@ namespace FrontEdu.Views
 
         private async void OnCoursesClicked(object sender, EventArgs e)
         {
-            await Shell.Current.GoToAsync("//CoursesPage");
+            await Shell.Current.GoToAsync("/CoursesPage");
         }
 
         private async void OnAbsencesClicked(object sender, EventArgs e)
         {
-            await Shell.Current.GoToAsync("//AbsencesPage");
+            await Shell.Current.GoToAsync("/AbsencesPage");
         }
         private async void OnAssignmentsClicked(object sender, EventArgs e)
         {
-            await Shell.Current.GoToAsync("//AssignmentsPage");
+            await Shell.Current.GoToAsync("/AssignmentsPage");
         }
 
         private async void OnProfileClicked(object sender, EventArgs e)
         {
-            await Shell.Current.GoToAsync("//ProfilePage");
+            await Shell.Current.GoToAsync("/ProfilePage");
         }
 
         private async void OnSettingsClicked(object sender, EventArgs e)
         {
-            await Shell.Current.GoToAsync("//SettingsPage");
+            await Shell.Current.GoToAsync("/SettingsPage");
         }
 
         private async void OnUsersClicked(object sender, EventArgs e)
@@ -115,12 +115,12 @@ namespace FrontEdu.Views
 
         private async void OnChatClicked(object sender, EventArgs e)
         {
-            await Shell.Current.GoToAsync("//ChatPage");
+            await Shell.Current.GoToAsync("/ChatPage");
         }
 
         private async void OnGroupChatsClicked(object sender, EventArgs e)
         {
-            await Shell.Current.GoToAsync("//GroupChatsPage");
+            await Shell.Current.GoToAsync("/GroupChatsPage");
         }
 
         private async void OnLogoutClicked(object sender, EventArgs e)
@@ -131,7 +131,7 @@ namespace FrontEdu.Views
                 await SecureStorage.Default.SetAsync("auth_token", string.Empty);
                 
                 // Перенаправляем на страницу входа
-                await Shell.Current.GoToAsync("//Login");
+                await Shell.Current.GoToAsync("/Login");
             }
             catch (Exception ex)
             {
@@ -142,7 +142,7 @@ namespace FrontEdu.Views
 
         private async void OnSubjectsClicked(object sender, EventArgs e)
         {
-            await Shell.Current.GoToAsync("//SubjectsPage");
+            await Shell.Current.GoToAsync("/SubjectsPage");
         }
 
         protected override void OnDisappearing()

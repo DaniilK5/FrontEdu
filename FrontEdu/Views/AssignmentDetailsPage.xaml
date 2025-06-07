@@ -116,6 +116,34 @@
                 </VerticalStackLayout>
             </Frame>
 
+            <!-- Панель отправки решения (для студентов) -->
+            <VerticalStackLayout x:Name="SubmitPanel"
+                                 IsVisible="false"
+                                 Spacing="10"
+                                 Margin="0,20,0,0">
+                <Label Text="Отправить решение"
+                       FontSize="18"
+                       FontAttributes="Bold"/>
+                
+                <Entry x:Name="ContentEntry"
+                       Placeholder="Комментарий к решению"
+                       MaxLength="500"/>
+                
+                <Grid ColumnDefinitions="*, Auto">
+                    <Label Grid.Column="0"
+                           x:Name="SelectedFileLabel"
+                           Text="Файл не выбран"
+                           VerticalOptions="Center"/>
+                    
+                    <Button Grid.Column="1"
+                            Text="Выбрать файл"
+                            Clicked="OnSelectFileClicked"/>
+                </Grid>
+                
+                <Button Text="Отправить"
+                        Clicked="OnSubmitSolutionClicked"/>
+            </VerticalStackLayout>
+
             <!-- Индикатор загрузки -->
             <ActivityIndicator x:Name="LoadingIndicator"
                              IsVisible="false"

@@ -64,20 +64,44 @@ namespace FrontEdu.Views
 
         private async void OnSubjectSelected(object sender, SelectionChangedEventArgs e)
         {
-            if (e.CurrentSelection.FirstOrDefault() is SubjectCourseInfo selectedSubject)
+            Debug.WriteLine("OnSubjectSelected started");
+
+            var selectedSubject = e.CurrentSelection.FirstOrDefault() as SubjectCourseInfo;
+            Debug.WriteLine($"Selected subject: {System.Text.Json.JsonSerializer.Serialize(selectedSubject)}");
+
+            if (selectedSubject != null)
             {
                 try
                 {
+                    Debug.WriteLine($"Clearing selection for subject with ID: {selectedSubject.Id}");
                     SubjectsCollection.SelectedItem = null;
 
-                    // Загружаем курсы предмета
-                    var response = await _httpClient.GetAsync($"api/Subject/{selectedSubject.Id}/courses");
+                    Debug.WriteLine($"Making API request for subject courses. Subject ID: {selectedSubject.Id}");
+                    var endpoint = $"api/Subject/{selectedSubject.Id}/courses";
+                    Debug.WriteLine($"API Endpoint: {endpoint}");
+
+                    // Проверяем состояние HttpClient
+                    if (_httpClient == null)
+                    {
+                        Debug.WriteLine("HttpClient is null, creating new instance");
+                        _httpClient = await AppConfig.CreateHttpClientAsync();
+                    }
+
+                    var response = await _httpClient.GetAsync(endpoint);
+                    Debug.WriteLine($"API Response Status: {response.StatusCode}");
+
+                    var responseContent = await response.Content.ReadAsStringAsync();
+                    Debug.WriteLine($"API Response Content: {responseContent}");
+
                     if (response.IsSuccessStatusCode)
                     {
+                        Debug.WriteLine("Deserializing response content");
                         var subjectCourses = await response.Content.ReadFromJsonAsync<SubjectCoursesResponse>();
+                        Debug.WriteLine($"Deserialized subject courses: {System.Text.Json.JsonSerializer.Serialize(subjectCourses)}");
+
                         if (subjectCourses != null)
                         {
-                            // Создаем параметры навигации
+                            Debug.WriteLine("Preparing navigation parameters");
                             var navigationParameter = new Dictionary<string, object>
                     {
                         { "subjectId", selectedSubject.Id },
@@ -86,29 +110,42 @@ namespace FrontEdu.Views
                         { "courses", subjectCourses.Courses }
                     };
 
-                            // Используем относительную навигацию с явным маршрутом
+                            Debug.WriteLine($"Navigation parameters prepared: {System.Text.Json.JsonSerializer.Serialize(navigationParameter)}");
+
+                            // Пробуем разные варианты навигации с подробным логированием
                             try
                             {
+                                Debug.WriteLine("Attempting navigation with '///' prefix");
                                 await Shell.Current.GoToAsync($"///courses", navigationParameter);
+                                Debug.WriteLine("First navigation attempt successful");
                             }
                             catch (Exception navEx)
                             {
-                                Debug.WriteLine($"First navigation attempt failed: {navEx}");
+                                Debug.WriteLine($"First navigation attempt failed: {navEx.Message}");
+                                Debug.WriteLine($"Stack trace: {navEx.StackTrace}");
+
                                 try
                                 {
+                                    Debug.WriteLine("Attempting navigation with '//' prefix");
                                     await Shell.Current.GoToAsync($"//courses", navigationParameter);
+                                    Debug.WriteLine("Second navigation attempt successful");
                                 }
                                 catch (Exception altNavEx)
                                 {
-                                    Debug.WriteLine($"Alternative navigation attempt failed: {altNavEx}");
+                                    Debug.WriteLine($"Second navigation attempt failed: {altNavEx.Message}");
+                                    Debug.WriteLine($"Stack trace: {altNavEx.StackTrace}");
+
                                     try
                                     {
-                                        // Последняя попытка с относительным путём
+                                        Debug.WriteLine("Attempting navigation with relative path");
                                         await Shell.Current.GoToAsync($"courses", navigationParameter);
+                                        Debug.WriteLine("Final navigation attempt successful");
                                     }
                                     catch (Exception lastNavEx)
                                     {
-                                        Debug.WriteLine($"Final navigation attempt failed: {lastNavEx}");
+                                        Debug.WriteLine($"Final navigation attempt failed: {lastNavEx.Message}");
+                                        Debug.WriteLine($"Stack trace: {lastNavEx.StackTrace}");
+                                        Debug.WriteLine($"Navigation parameter types: {string.Join(", ", navigationParameter.Select(p => $"{p.Key}: {p.Value?.GetType().FullName}"))}");
                                         await DisplayAlert("Ошибка", "Не удалось открыть страницу курсов", "OK");
                                     }
                                 }
@@ -116,20 +153,35 @@ namespace FrontEdu.Views
                         }
                         else
                         {
+                            Debug.WriteLine("Deserialized subject courses is null");
                             await DisplayAlert("Ошибка", "Не удалось загрузить информацию о курсах предмета", "OK");
                         }
                     }
                     else
                     {
+                        Debug.WriteLine($"API request failed with status code: {response.StatusCode}");
+                        Debug.WriteLine($"Error response content: {responseContent}");
                         await DisplayAlert("Ошибка", "Не удалось загрузить информацию о курсах предмета", "OK");
                     }
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"Navigation error: {ex}");
+                    Debug.WriteLine($"Exception in OnSubjectSelected: {ex.Message}");
+                    Debug.WriteLine($"Stack trace: {ex.StackTrace}");
+                    if (ex.InnerException != null)
+                    {
+                        Debug.WriteLine($"Inner exception: {ex.InnerException.Message}");
+                        Debug.WriteLine($"Inner exception stack trace: {ex.InnerException.StackTrace}");
+                    }
                     await DisplayAlert("Ошибка", "Не удалось открыть курсы предмета", "OK");
                 }
             }
+            else
+            {
+                Debug.WriteLine("Selected subject is null");
+            }
+
+            Debug.WriteLine("OnSubjectSelected completed");
         }
         private async Task LoadSubjects()
         {
