@@ -296,23 +296,80 @@ public partial class AbsencesPage : ContentPage
     {
         try
         {
+            LoadingIndicator.IsVisible = true;
             var queryString = BuildQueryString();
             var response = await _httpClient.GetAsync($"api/Absence/parent/children{queryString}");
+
             if (response.IsSuccessStatusCode)
             {
-                var absences = await response.Content.ReadFromJsonAsync<List<StudentAbsenceStatistics>>();
+                // Логируем ответ для отладки
+                var rawContent = await response.Content.ReadAsStringAsync();
+                Debug.WriteLine($"API Response: {rawContent}");
+
+                var absences = await response.Content.ReadFromJsonAsync<List<ParentChildAbsenceDetails>>();
                 if (absences != null)
                 {
                     await MainThread.InvokeOnMainThreadAsync(() =>
                     {
                         _allStudents.Clear();
-                        foreach (var absence in absences)
+
+                        // Обновляем общую статистику на основе данных детей
+                        int totalExcused = 0;
+                        int totalUnexcused = 0;
+
+                        foreach (var childAbsence in absences)
                         {
-                            _allStudents.Add(absence);
+                            Debug.WriteLine($"Processing child absence: {System.Text.Json.JsonSerializer.Serialize(childAbsence)}");
+
+                            // Проверяем, что Student не null
+                            if (childAbsence?.Student == null)
+                            {
+                                Debug.WriteLine("Warning: Student is null for a child absence record");
+                                continue;
+                            }
+
+                            var studentStats = new StudentAbsenceStatistics
+                            {
+                                StudentId = childAbsence.Student.Id,
+                                Student = childAbsence.Student.FullName,
+                                TotalHours = childAbsence.TotalHours,
+                                ExcusedHours = childAbsence.ExcusedHours,
+                                UnexcusedHours = childAbsence.UnexcusedHours
+                            };
+
+                            Debug.WriteLine($"Created student stats: {System.Text.Json.JsonSerializer.Serialize(studentStats)}");
+
+                            _allStudents.Add(studentStats);
+
+                            totalExcused += childAbsence.ExcusedHours;
+                            totalUnexcused += childAbsence.UnexcusedHours;
                         }
+
+                        // Обновляем статистику в ViewModel
+                        _viewModel.GroupName = "Мои дети";
+                        _viewModel.TotalStudents = _allStudents.Count;
+                        _viewModel.ExcusedHours = totalExcused;
+                        _viewModel.UnexcusedHours = totalUnexcused;
+                        _viewModel.TotalAbsenceHours = totalExcused + totalUnexcused;
+                        _viewModel.AverageAbsenceHours = _allStudents.Count > 0
+                            ? (double)_viewModel.TotalAbsenceHours / _allStudents.Count
+                            : 0;
+
                         ApplyFilter();
+
+                        Debug.WriteLine($"Updated ViewModel - Total Students: {_viewModel.TotalStudents}, " +
+                                      $"Total Hours: {_viewModel.TotalAbsenceHours}");
                     });
                 }
+                else
+                {
+                    Debug.WriteLine("Deserialized response is null");
+                }
+            }
+            else
+            {
+                Debug.WriteLine($"Error loading children absences: {await response.Content.ReadAsStringAsync()}");
+                await DisplayAlert("Ошибка", "Не удалось загрузить информацию о пропусках", "OK");
             }
         }
         catch (Exception ex)
@@ -320,8 +377,11 @@ public partial class AbsencesPage : ContentPage
             Debug.WriteLine($"Error loading children absences: {ex}");
             await DisplayAlert("Ошибка", "Не удалось загрузить информацию о пропусках", "OK");
         }
+        finally
+        {
+            LoadingIndicator.IsVisible = false;
+        }
     }
-
     private async Task LoadStudentAbsences()
     {
         try
@@ -361,9 +421,15 @@ public partial class AbsencesPage : ContentPage
         var parameters = new List<string>();
 
         if (_startDate.HasValue)
-            parameters.Add($"startDate={_startDate.Value:yyyy-MM-dd}");
+        {
+            var startDate = _startDate.Value.ToUniversalTime().Date;
+            parameters.Add($"startDate={startDate:o}");
+        }
         if (_endDate.HasValue)
-            parameters.Add($"endDate={_endDate.Value:yyyy-MM-dd}");
+        {
+            var endDate = _endDate.Value.ToUniversalTime().Date.AddDays(1).AddTicks(-1);
+            parameters.Add($"endDate={endDate:o}");
+        }
         if (!_showExcused && _showUnexcused)
             parameters.Add("isExcused=false");
         if (_showExcused && !_showUnexcused)
