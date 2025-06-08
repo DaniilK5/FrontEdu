@@ -75,6 +75,12 @@
                         Text="Пользователи"
                         Clicked="OnUsersClicked"
                         HorizontalOptions="Fill"/>
+                    
+                    <Button 
+                        x:Name="GroupManagementButton"
+                        Text="Управление группами"
+                        Clicked="OnGroupManagementClicked"
+                        HorizontalOptions="Fill"/>
                 </VerticalStackLayout>
             </Frame>
 
@@ -110,7 +116,23 @@
                             Text="Пропуски"
                             Clicked="OnAbsencesClicked"
                             IsVisible="False"/>
+                    <Button x:Name="ScheduleButton"
+                            Text="Расписание"
+                            Clicked="OnScheduleClicked"
+                            IsVisible="True"/>
                     <!-- Другие кнопки раздела расписания -->
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- После секции расписания -->
+            <Frame x:Name="CuratorSection" Padding="15" BorderColor="Gray" IsVisible="False">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Кураторство" 
+                           FontSize="24"
+                           HorizontalOptions="Center"/>
+                    <Button x:Name="CuratorButton"
+                            Text="Показатели группы"
+                            Clicked="OnCuratorClicked"/>
                 </VerticalStackLayout>
             </Frame>
 

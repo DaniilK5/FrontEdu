@@ -50,6 +50,13 @@ namespace FrontEdu
             Routing.RegisterRoute("///courses", typeof(CoursesPage));
 
             Routing.RegisterRoute("AbsencesPage", typeof(AbsencesPage));
+            // Добавляем маршрут для страницы куратора
+            Routing.RegisterRoute("CuratorPage", typeof(CuratorPage));
+
+            // Добавляем маршрут для страницы управления группами
+            Routing.RegisterRoute("GroupManagementPage", typeof(GroupManagementPage));
+
+            Routing.RegisterRoute("SchedulePage", typeof(SchedulePage));
         }
 
         private async void SetupMenu()
@@ -167,6 +174,15 @@ namespace FrontEdu
                 Route = "UsersPage",
                 ContentTemplate = new DataTemplate(typeof(UsersPage))
             });
+            
+            // Добавляем пункт управления группами
+            adminSection.Items.Add(new ShellContent
+            {
+                Title = "Управление группами",
+                Route = "GroupManagementPage",
+                ContentTemplate = new DataTemplate(typeof(GroupManagementPage))
+            });
+            
             Items.Add(adminSection);
         }
 
@@ -262,6 +278,18 @@ namespace FrontEdu
                     Title = "Пропуски",
                     Route = "AbsencesPage",
                     ContentTemplate = new DataTemplate(typeof(AbsencesPage))
+                });
+            }
+
+            // Добавляем пункт меню куратора если пользователь является куратором
+            if (_userPermissions.Categories.Schedule.CanManage && 
+                _userPermissions.Role?.ToLower() == "teacher")
+            {
+                tab.Items.Add(new ShellContent
+                {
+                    Title = "Кураторство",
+                    Route = "CuratorPage",
+                    ContentTemplate = new DataTemplate(typeof(CuratorPage))
                 });
             }
 

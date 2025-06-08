@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="FrontEdu.Views.GroupManagementPage"
+             Title="Управление группами">
+
+    <Grid RowDefinitions="Auto,*" Padding="20">
+        <!-- Выбор группы -->
+        <VerticalStackLayout Grid.Row="0" Spacing="10">
+            <Label Text="Выберите группу:" FontSize="16"/>
+            <Picker x:Name="GroupPicker" 
+                    Title="Выберите группу"
+                    SelectedIndexChanged="OnGroupSelected"/>
+
+            <BoxView HeightRequest="1" 
+                     Color="Gray" 
+                     Margin="0,10"/>
+        </VerticalStackLayout>
+
+        <!-- Основной контент -->
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Spacing="20">
+                <!-- Информация о кураторе -->
+                <Frame Padding="15" BorderColor="Gray">
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="Куратор группы" 
+                               FontSize="18" 
+                               FontAttributes="Bold"/>
+
+                        <Label x:Name="CuratorLabel" 
+                               Text="Нет куратора"/>
+
+                        <HorizontalStackLayout Spacing="10">
+                            <Button Text="Назначить куратора" 
+                                    Clicked="OnSetCuratorClicked"/>
+                            <Button Text="Удалить куратора" 
+                                    Clicked="OnRemoveCuratorClicked"
+                                    BackgroundColor="Red"/>
+                        </HorizontalStackLayout>
+                    </VerticalStackLayout>
+                </Frame>
+
+                <!-- Управление студентами -->
+                <Frame Padding="15" BorderColor="Gray">
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="Студенты группы" 
+                               FontSize="18" 
+                               FontAttributes="Bold"/>
+                        
+                        <HorizontalStackLayout Spacing="10">
+                            <Button Text="Добавить студентов" 
+                                    Clicked="OnAddStudentsClicked"/>
+                            <Button Text="Удалить студентов" 
+                                    Clicked="OnRemoveStudentsClicked"
+                                    BackgroundColor="Red"/>
+                        </HorizontalStackLayout>
+
+                        <CollectionView x:Name="StudentsCollection"
+                                      EmptyView="В группе нет студентов">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate>
+                                    <SwipeView>
+                                        <SwipeView.RightItems>
+                                            <SwipeItems>
+                                                <SwipeItem Text="Удалить"
+                                                           BackgroundColor="Red"
+                                                           Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=RemoveStudentCommand}"
+                                                           CommandParameter="{Binding Id}"/>
+                                            </SwipeItems>
+                                        </SwipeView.RightItems>
+                                        <Grid Padding="10">
+                                            <Label Text="{Binding FullName}"
+                                                   VerticalOptions="Center"/>
+                                        </Grid>
+                                    </SwipeView>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                    </VerticalStackLayout>
+                </Frame>
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <ActivityIndicator x:Name="LoadingIndicator" 
+                          Grid.RowSpan="2"
+                          IsVisible="False"
+                          IsRunning="True"
+                          HorizontalOptions="Center"
+                          VerticalOptions="Center"/>
+    </Grid>
+</ContentPage>

@@ -70,6 +70,12 @@ namespace FrontEdu.Views
                         AbsencesButton.IsVisible = _userPermissions.Categories.Schedule.CanView ||
                                                  _userPermissions.Categories.Schedule.CanManage;
 
+                        // Добавляем проверку для секции куратора
+                        CuratorSection.IsVisible = _userPermissions.Categories.Schedule.CanManage && 
+                                                 _userPermissions.Role?.ToLower() == "teacher";
+
+                        // Добавляем видимость кнопки расписания
+                        ScheduleButton.IsVisible = true; // Расписание доступно всем
                     });
                 }
                 else
@@ -127,15 +133,51 @@ namespace FrontEdu.Views
         {
             try
             {
-                // Очищаем токен
-                await SecureStorage.Default.SetAsync("auth_token", string.Empty);
+                Debug.WriteLine("Logout process started");
+
+                // Получаем текущий токен для логирования
+                var token = await SecureStorage.Default.GetAsync("auth_token");
+                if (!string.IsNullOrEmpty(token))
+                {
+                    try
+                    {
+                        var handler = new JwtSecurityTokenHandler();
+                        var jwtToken = handler.ReadToken(token) as JwtSecurityToken;
+                        var userId = jwtToken?.Claims.FirstOrDefault(x => x.Type == "sub")?.Value;
+                        var userRole = jwtToken?.Claims.FirstOrDefault(x => x.Type == "role")?.Value;
+                        
+                        Debug.WriteLine($"Logging out user - ID: {userId ?? "unknown"}, Role: {userRole ?? "unknown"}");
+                    }
+                    catch (Exception tokenEx)
+                    {
+                        Debug.WriteLine($"Error reading token: {tokenEx.Message}");
+                    }
+                }
                 
-                // Перенаправляем на страницу входа
+                Debug.WriteLine("Removing authentication token from secure storage");
+                try
+                {
+                    // Вместо установки пустой строки, удаляем ключ
+                    SecureStorage.Default.Remove("auth_token");
+                    Debug.WriteLine("Token successfully removed");
+                }
+                catch (Exception storageEx)
+                {
+                    Debug.WriteLine($"Error removing token from storage: {storageEx.Message}");
+                }
+                
+                Debug.WriteLine("Redirecting to login page");
                 await Shell.Current.GoToAsync("/Login");
+                
+                // Очищаем состояние страницы
+                Cleanup();
+                
+                Debug.WriteLine("Logout completed successfully");
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Logout error: {ex}");
+                Debug.WriteLine($"Logout error: {ex.Message}");
+                Debug.WriteLine($"Stack trace: {ex.StackTrace}");
                 await DisplayAlert("Ошибка", "Не удалось выйти из системы", "OK");
             }
         }
@@ -143,6 +185,21 @@ namespace FrontEdu.Views
         private async void OnSubjectsClicked(object sender, EventArgs e)
         {
             await Shell.Current.GoToAsync("/SubjectsPage");
+        }
+
+        private async void OnCuratorClicked(object sender, EventArgs e)
+        {
+            await Shell.Current.GoToAsync("/CuratorPage");
+        }
+
+        private async void OnGroupManagementClicked(object sender, EventArgs e)
+        {
+            await Shell.Current.GoToAsync("/GroupManagementPage");
+        }
+
+        private async void OnScheduleClicked(object sender, EventArgs e)
+        {
+            await Shell.Current.GoToAsync("/SchedulePage");
         }
 
         protected override void OnDisappearing()

@@ -20,6 +20,7 @@ namespace FrontEdu.Models.User
         public int? StudentGroupId { get; set; }
         public RelatedUsersInfo RelatedUsers { get; set; }
         public GroupInfo GroupInfo { get; set; }
+        public int CuratorGroupId { get; set; }
     }
 
     public class RelatedUsersInfo

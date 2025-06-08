@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Maui;
 using CommunityToolkit.Maui.Storage;
 using FrontEdu.Services;
+using FrontEdu.Views;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Net.Http.Headers;
@@ -48,7 +49,11 @@ namespace FrontEdu
 #if DEBUG
             builder.Logging.AddDebug();
 #endif
+            // Регистрируем IFileSaver как синглтон
+            builder.Services.AddSingleton(FileSaver.Default);
 
+            // Регистрируем SchedulePage как transient
+            builder.Services.AddTransient<SchedulePage>();
             return builder.Build();
         }
     }
