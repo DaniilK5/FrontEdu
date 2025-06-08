@@ -76,6 +76,12 @@ namespace FrontEdu.Views
 
                         // Добавляем видимость кнопки расписания
                         ScheduleButton.IsVisible = true; // Расписание доступно всем
+
+                        // Добавляем проверку для секции родителя
+                        ParentSection.IsVisible = _userPermissions.Role?.ToLower() == "parent";
+
+                        // Добавляем проверку для кнопки оценок
+                        GradesButton.IsVisible = _userPermissions.Role?.ToLower() == "student";
                     });
                 }
                 else
@@ -157,7 +163,6 @@ namespace FrontEdu.Views
                 Debug.WriteLine("Removing authentication token from secure storage");
                 try
                 {
-                    // Вместо установки пустой строки, удаляем ключ
                     SecureStorage.Default.Remove("auth_token");
                     Debug.WriteLine("Token successfully removed");
                 }
@@ -165,12 +170,16 @@ namespace FrontEdu.Views
                 {
                     Debug.WriteLine($"Error removing token from storage: {storageEx.Message}");
                 }
+
+                // Очищаем состояние страницы перед переходом
+                _userPermissions = null;
+                _isInitialized = false;
+                
+                // Важно: НЕ освобождаем HttpClient здесь
+                _httpClient = null; // Просто обнуляем ссылку
                 
                 Debug.WriteLine("Redirecting to login page");
                 await Shell.Current.GoToAsync("/Login");
-                
-                // Очищаем состояние страницы
-                Cleanup();
                 
                 Debug.WriteLine("Logout completed successfully");
             }
@@ -202,6 +211,29 @@ namespace FrontEdu.Views
             await Shell.Current.GoToAsync("/SchedulePage");
         }
 
+        private async void OnChildrenPerformanceClicked(object sender, EventArgs e)
+        {
+            await Shell.Current.GoToAsync("/ParentPerformancePage");
+        }
+
+        private async void OnGradesClicked(object sender, EventArgs e)
+        {
+            await Shell.Current.GoToAsync("/StudentGradesPage");
+        }
+
+        private async void OnHelpClicked(object sender, EventArgs e)
+        {
+            try
+            {
+                await Shell.Current.GoToAsync("HelpPage");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Navigation error: {ex}");
+                await DisplayAlert("Ошибка", "Не удалось открыть справку", "OK");
+            }
+        }
+
         protected override void OnDisappearing()
         {
             base.OnDisappearing();
@@ -212,10 +244,9 @@ namespace FrontEdu.Views
         // Добавляем метод для очистки ресурсов при выходе из приложения
         public void Cleanup()
         {
-            _httpClient?.Dispose();
-            _httpClient = null;
             _userPermissions = null;
             _isInitialized = false;
+            _httpClient = null; // Просто обнуляем ссылку, не вызывая Dispose
         }
     }
 }

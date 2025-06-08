@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="FrontEdu.Views.HelpPage"
+             Title="Справка">
+
+    <ScrollView>
+        <VerticalStackLayout Spacing="16" Padding="16">
+            <Frame BorderColor="{StaticResource Primary}" Padding="16" CornerRadius="8">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Общая информация" FontSize="20" FontAttributes="Bold"/>
+                    <Label Text="FrontEdu - это образовательная платформа для студентов и преподавателей. Здесь вы можете управлять курсами, заданиями, общаться и отслеживать успеваемость."/>
+                </VerticalStackLayout>
+            </Frame>
+
+            <Frame BorderColor="{StaticResource Primary}" Padding="16" CornerRadius="8">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Навигация" FontSize="20" FontAttributes="Bold"/>
+                    <Label Text="• Главное меню - доступ ко всем основным функциям"/>
+                    <Label Text="• Профиль - ваши личные данные и настройки"/>
+                    <Label Text="• Учебные материалы - доступ к курсам и заданиям"/>
+                    <Label Text="• Чаты - общение с другими пользователями"/>
+                    <Label Text="• Расписание - просмотр и управление расписанием"/>
+                </VerticalStackLayout>
+            </Frame>
+
+            <Frame BorderColor="{StaticResource Primary}" Padding="16" CornerRadius="8">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Роли пользователей" FontSize="20" FontAttributes="Bold"/>
+                    <Label Text="Студент:"/>
+                    <Label Text="• Просмотр курсов и заданий" Margin="16,0,0,0"/>
+                    <Label Text="• Выполнение заданий" Margin="16,0,0,0"/>
+                    <Label Text="• Общение в чатах" Margin="16,0,0,0"/>
+
+                    <Label Text="Преподаватель:" Margin="0,8,0,0"/>
+                    <Label Text="• Создание и управление курсами" Margin="16,0,0,0"/>
+                    <Label Text="• Создание заданий" Margin="16,0,0,0"/>
+                    <Label Text="• Проверка работ" Margin="16,0,0,0"/>
+
+                    <Label Text="Администратор:" Margin="0,8,0,0"/>
+                    <Label Text="• Управление пользователями" Margin="16,0,0,0"/>
+                    <Label Text="• Управление группами" Margin="16,0,0,0"/>
+                    <Label Text="• Полный доступ к системе" Margin="16,0,0,0"/>
+                </VerticalStackLayout>
+            </Frame>
+
+            <Frame BorderColor="{StaticResource Primary}" Padding="16" CornerRadius="8">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Часто задаваемые вопросы" FontSize="20" FontAttributes="Bold"/>
+                    <Label Text="Как изменить личные данные?" FontAttributes="Bold"/>
+                    <Label Text="Перейдите в раздел Профиль и нажмите кнопку редактирования."/>
+
+                    <Label Text="Как найти нужный курс?" FontAttributes="Bold" Margin="0,8,0,0"/>
+                    <Label Text="Используйте поиск в разделе Учебные материалы."/>
+
+                    <Label Text="Как связаться с преподавателем?" FontAttributes="Bold" Margin="0,8,0,0"/>
+                    <Label Text="Используйте личные сообщения в разделе Чаты."/>
+                </VerticalStackLayout>
+            </Frame>
+
+            <Frame BorderColor="{StaticResource Primary}" Padding="16" CornerRadius="8">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Техническая поддержка" FontSize="20" FontAttributes="Bold"/>
+                    <Label Text="При возникновении проблем обратитесь к администратору системы или в службу поддержки."/>
+                </VerticalStackLayout>
+            </Frame>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

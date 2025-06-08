@@ -569,78 +569,109 @@ public partial class SchedulePage : ContentPage
 
     private async void OnUploadClicked(object sender, EventArgs e)
     {
+        Debug.WriteLine("OnUploadClicked started");
+
         if (_selectedFile == null)
         {
+            Debug.WriteLine("No file selected");
             await DisplayAlert("Внимание", "Выберите файл", "OK");
             return;
         }
 
         if (!_selectedGroupId.HasValue)
         {
+            Debug.WriteLine("No group selected");
             await DisplayAlert("Внимание", "Выберите группу", "OK");
-            return;
-        }
-
-        if (_currentType == ImageType.Grades && !_selectedSubjectId.HasValue)
-        {
-            await DisplayAlert("Внимание", "Выберите предмет", "OK");
             return;
         }
 
         try
         {
+            Debug.WriteLine($"Starting file upload process - File: {_selectedFile.FileName}, Size: {_selectedFile.FullPath}, Type: {_currentType}");
             LoadingIndicator.IsVisible = true;
 
             var content = new MultipartFormDataContent();
-            
-            // Добавляем файл
+
+            // Логируем информацию о файле
+            Debug.WriteLine($"Opening file stream for {_selectedFile.FileName}");
             var stream = await _selectedFile.OpenReadAsync();
+            Debug.WriteLine($"Stream opened successfully, length: {stream.Length} bytes");
+
             var fileContent = new StreamContent(stream);
+            Debug.WriteLine("Adding file to MultipartFormDataContent");
             content.Add(fileContent, "file", _selectedFile.FileName);
-            
-            // Добавляем остальные параметры
+
+            // Логируем параметры запроса
+            Debug.WriteLine($"Current type: {_currentType}");
+            Debug.WriteLine($"Selected group ID: {_selectedGroupId}");
+
             if (_currentType == ImageType.Grades)
             {
+                Debug.WriteLine($"Adding grades parameters - SubjectId: {_selectedSubjectId}");
                 content.Add(new StringContent("Grades"), "type");
                 content.Add(new StringContent(_selectedSubjectId.ToString()), "subjectId");
             }
-            
+
             content.Add(new StringContent(_selectedGroupId.ToString()), "studentGroupId");
 
-            // Выбираем URL в зависимости от типа
-            var uploadUrl = _currentType == ImageType.Schedule 
-                ? "api/GradeImages/schedule/upload" 
+            // Логируем URL
+            var uploadUrl = _currentType == ImageType.Schedule
+                ? "api/GradeImages/schedule/upload"
                 : "api/GradeImages/upload";
+            Debug.WriteLine($"Upload URL: {uploadUrl}");
 
+            // Логируем отправку запроса
+            Debug.WriteLine("Sending POST request");
             var response = await _httpClient.PostAsync(uploadUrl, content);
-            
+            Debug.WriteLine($"Response status code: {response.StatusCode}");
+
+            var responseContent = await response.Content.ReadAsStringAsync();
+            Debug.WriteLine($"Response content: {responseContent}");
+
             if (response.IsSuccessStatusCode)
             {
+                Debug.WriteLine("Upload successful, parsing response");
                 var result = await response.Content.ReadFromJsonAsync<ImageUploadResponse>();
+                Debug.WriteLine($"Upload completed - Image ID: {result?.Id}, File name: {result?.FileName}");
+
                 await DisplayAlert("Успех", "Файл успешно загружен", "OK");
-                
+
                 _selectedFile = null;
                 SelectedFileLabel.Text = "Файл не выбран";
-                
+
                 await LoadImages();
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+            {
+                Debug.WriteLine("Upload forbidden - access denied");
+                await DisplayAlert("Ошибка", "Извините, нельзя загрузить файл.", "OK");
             }
             else
             {
-                var error = await response.Content.ReadAsStringAsync();
-                await DisplayAlert("Ошибка", error, "OK");
+                Debug.WriteLine($"Upload failed with status code: {response.StatusCode}");
+                await DisplayAlert("Ошибка", responseContent, "OK");
             }
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Upload error: {ex}");
+            Debug.WriteLine($"Upload error: {ex.GetType().Name}");
+            Debug.WriteLine($"Error message: {ex.Message}");
+            Debug.WriteLine($"Stack trace: {ex.StackTrace}");
+
+            if (ex.InnerException != null)
+            {
+                Debug.WriteLine($"Inner exception: {ex.InnerException.Message}");
+                Debug.WriteLine($"Inner exception stack trace: {ex.InnerException.StackTrace}");
+            }
+
             await DisplayAlert("Ошибка", "Не удалось загрузить файл", "OK");
         }
         finally
         {
+            Debug.WriteLine("Upload process completed");
             LoadingIndicator.IsVisible = false;
         }
     }
-
     public enum ImageType
     {
         Schedule,

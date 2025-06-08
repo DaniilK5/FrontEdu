@@ -69,7 +69,7 @@
             <converters:StringNotEmptyConverter x:Key="StringNotEmptyConverter"/>
             <converters:NotNullConverter x:Key="NotNullConverter"/>
             <converters:IsNullConverter x:Key="IsNullConverter"/>
-
+            <converters:InverseBoolConverter x:Key="InverseBoolConverter"/>
             <converters:StringNotNullOrEmptyConverter x:Key="StringNotNullOrEmptyConverter"/>
 
             <!-- Конвертер для цвета фона сообщений -->

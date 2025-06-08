@@ -3,16 +3,93 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="FrontEdu.Views.SettingsPage"
              Title="Настройки">
-    <VerticalStackLayout Spacing="20" Padding="20">
-        <Label 
-            Text="Настройки"
-            SemanticProperties.HeadingLevel="Level1"
-            FontSize="32"
-            HorizontalOptions="Center" />
+    <Grid>
+        <ActivityIndicator x:Name="LoadingIndicator" 
+                          IsVisible="False" 
+                          IsRunning="{Binding Source={x:Reference LoadingIndicator}, Path=IsVisible}"
+                          HorizontalOptions="Center" 
+                          VerticalOptions="Center"/>
 
-        <Button 
-            Text="Вернуться на главную"
-            Clicked="OnBackToMainClicked"
-            HorizontalOptions="Center"/>
-    </VerticalStackLayout>
+        <ScrollView IsVisible="{Binding Source={x:Reference LoadingIndicator}, Path=IsVisible, Converter={StaticResource InverseBoolConverter}}">
+            <VerticalStackLayout Spacing="20" Padding="20">
+                <Label Text="Системные настройки"
+                       SemanticProperties.HeadingLevel="Level1"
+                       FontSize="32"
+                       HorizontalOptions="Center" />
+
+                <Border Padding="10" Stroke="Gray">
+                    <VerticalStackLayout Spacing="15">
+                        <Label Text="Основные настройки" FontSize="20" FontAttributes="Bold"/>
+
+                        <Entry x:Name="SiteNameEntry" 
+                               Placeholder="Название сайта"
+                               Text="{Binding SiteName}"/>
+
+                        <Entry x:Name="TimeZoneEntry"
+                               Placeholder="Часовой пояс по умолчанию"
+                               Text="{Binding DefaultTimeZone}"/>
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border Padding="10" Stroke="Gray">
+                    <VerticalStackLayout Spacing="15">
+                        <Label Text="Настройки файлов" FontSize="20" FontAttributes="Bold"/>
+
+                        <HorizontalStackLayout Spacing="10">
+                            <Label Text="Максимальный размер файла (байт):"/>
+                            <Entry x:Name="MaxFileSizeEntry"
+                                   Keyboard="Numeric"
+                                   Text="{Binding MaxFileSize}"
+                                   WidthRequest="150"/>
+                        </HorizontalStackLayout>
+
+                        <Entry x:Name="AllowedTypesEntry"
+                               Placeholder="Разрешенные типы файлов (через запятую)"
+                               Text="{Binding AllowedFileTypesString}"/>
+
+                        <HorizontalStackLayout Spacing="10">
+                            <Label Text="Макс. количество файлов в сообщении:"/>
+                            <Entry x:Name="MaxFilesPerMessageEntry"
+                                   Keyboard="Numeric"
+                                   Text="{Binding MaxUploadFilesPerMessage}"
+                                   WidthRequest="80"/>
+                        </HorizontalStackLayout>
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border Padding="10" Stroke="Gray">
+                    <VerticalStackLayout Spacing="15">
+                        <Label Text="Настройки безопасности" FontSize="20" FontAttributes="Bold"/>
+
+                        <HorizontalStackLayout Spacing="10">
+                            <Label Text="Мин. длина пароля:"/>
+                            <Entry x:Name="PasswordLengthEntry"
+                                   Keyboard="Numeric"
+                                   Text="{Binding PasswordMinLength}"
+                                   WidthRequest="80"/>
+                        </HorizontalStackLayout>
+
+                        <HorizontalStackLayout Spacing="10">
+                            <CheckBox x:Name="RequireEmailVerificationCheckbox"
+                                    IsChecked="{Binding RequireEmailVerification}"/>
+                            <Label Text="Требовать подтверждение email"
+                                   VerticalOptions="Center"/>
+                        </HorizontalStackLayout>
+
+                        <HorizontalStackLayout Spacing="10">
+                            <CheckBox x:Name="RequireStrongPasswordCheckbox"
+                                    IsChecked="{Binding RequireStrongPassword}"/>
+                            <Label Text="Требовать сложный пароль"
+                                   VerticalOptions="Center"/>
+                        </HorizontalStackLayout>
+                    </VerticalStackLayout>
+                </Border>
+
+                <Button Text="Сохранить изменения"
+                        Clicked="OnSaveSettingsClicked"
+                        HorizontalOptions="Center"
+                        Margin="0,20,0,0"/>
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
 </ContentPage>

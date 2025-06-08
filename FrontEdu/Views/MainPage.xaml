@@ -37,6 +37,14 @@
                         Text="Задания"
                         Clicked="OnAssignmentsClicked"
                         HorizontalOptions="Fill"/>
+
+                    <!-- В секцию обучения добавьте кнопку -->
+                    <Button 
+                        x:Name="GradesButton"
+                        Text="Мои оценки"
+                        Clicked="OnGradesClicked"
+                        IsVisible="{Binding IsStudent}"
+                        HorizontalOptions="Fill"/>
                 </VerticalStackLayout>
             </Frame>
 
@@ -133,6 +141,34 @@
                     <Button x:Name="CuratorButton"
                             Text="Показатели группы"
                             Clicked="OnCuratorClicked"/>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Добавьте в существующий Frame или создайте новый -->
+            <Frame x:Name="ParentSection" Padding="15" BorderColor="Gray" IsVisible="False">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Дети" 
+                           FontSize="24"
+                           HorizontalOptions="Center"/>
+                    <Button x:Name="ChildrenPerformanceButton"
+                            Text="Успеваемость детей"
+                            Clicked="OnChildrenPerformanceClicked"/>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Секция справки -->
+            <Frame Padding="15" BorderColor="Gray">
+                <VerticalStackLayout Spacing="15">
+                    <Label 
+                        Text="Помощь"
+                        FontSize="24"
+                        HorizontalOptions="Center"/>
+                    
+                    <Button 
+                        x:Name="HelpButton"
+                        Text="Справка"
+                        Clicked="OnHelpClicked"
+                        HorizontalOptions="Fill"/>
                 </VerticalStackLayout>
             </Frame>
 

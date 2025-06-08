@@ -28,7 +28,7 @@ namespace FrontEdu
 
             // Регистрация маршрутов для навигации
             Routing.RegisterRoute("MainPage", typeof(MainPage));
-            Routing.RegisterRoute("Login", typeof(LoginPage));
+            Routing.RegisterRoute("Login", typeof(LoginPage));  
             Routing.RegisterRoute("Register", typeof(RegisterPage));
 
             Routing.RegisterRoute("ProfilePage", typeof(ProfilePage));
@@ -57,6 +57,12 @@ namespace FrontEdu
             Routing.RegisterRoute("GroupManagementPage", typeof(GroupManagementPage));
 
             Routing.RegisterRoute("SchedulePage", typeof(SchedulePage));
+
+            Routing.RegisterRoute("ParentPerformancePage", typeof(ParentPerformancePage));
+
+            Routing.RegisterRoute("StudentGradesPage", typeof(StudentGradesPage));
+            
+            Routing.RegisterRoute("HelpPage", typeof(HelpPage));
         }
 
         private async void SetupMenu()
@@ -311,6 +317,15 @@ namespace FrontEdu
                 Route = "SettingsPage",
                 ContentTemplate = new DataTemplate(typeof(SettingsPage))
             });
+            
+            // Добавляем пункт справки
+            settingsSection.Items.Add(new ShellContent
+            {
+                Title = "Справка",
+                Route = "HelpPage",
+                ContentTemplate = new DataTemplate(typeof(HelpPage))
+            });
+            
             Items.Add(settingsSection);
         }
 

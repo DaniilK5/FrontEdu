@@ -54,6 +54,8 @@ namespace FrontEdu
 
             // Регистрируем SchedulePage как transient
             builder.Services.AddTransient<SchedulePage>();
+
+
             return builder.Build();
         }
     }
