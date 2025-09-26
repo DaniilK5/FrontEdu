@@ -30,6 +30,8 @@ public partial class CoursesPage : ContentPage, INotifyPropertyChanged
     public string SubjectCode { get; set; }
     public List<SubjectCourseInfo> SubjectCourses { get; set; }
     private bool _isNavigating;
+
+    private int _selectedSubjectId = -1;
     protected override async void OnNavigatedTo(NavigatedToEventArgs args)
     {
         base.OnNavigatedTo(args);
@@ -90,7 +92,7 @@ public partial class CoursesPage : ContentPage, INotifyPropertyChanged
             {
                 await MainThread.InvokeOnMainThreadAsync(() =>
                 {
-                    Title = $"Курсы предмета {SubjectName}";
+                    Title = $"Темы предмета {SubjectName}";
                     _allCourses.Clear();
                     foreach (var course in SubjectCourses)
                     {
@@ -115,7 +117,7 @@ public partial class CoursesPage : ContentPage, INotifyPropertyChanged
         catch (Exception ex)
         {
             Debug.WriteLine($"Initialize error: {ex}");
-            await DisplayAlert("Ошибка", "Не удалось загрузить курсы", "OK");
+            await DisplayAlert("Ошибка", "Не удалось загрузить темы", "OK");
         }
         finally
         {
@@ -156,7 +158,7 @@ public partial class CoursesPage : ContentPage, INotifyPropertyChanged
                     await MainThread.InvokeOnMainThreadAsync(() =>
                     {
                         // Обновляем заголовок страницы
-                        Title = $"Курсы предмета {subjectCourses.Name}";
+                        Title = $"Темы предмета {subjectCourses.Name}";
 
                         _allCourses.Clear();
                         foreach (var course in subjectCourses.Courses ?? Enumerable.Empty<SubjectCourseInfo>())
@@ -177,13 +179,13 @@ public partial class CoursesPage : ContentPage, INotifyPropertyChanged
             }
             else
             {
-                await DisplayAlert("Ошибка", "Не удалось загрузить курсы", "OK");
+                await DisplayAlert("Ошибка", "Не удалось загрузить темы", "OK");
             }
         }
         catch (Exception ex)
         {
             Debug.WriteLine($"Error loading courses: {ex}");
-            await DisplayAlert("Ошибка", "Не удалось загрузить курсы", "OK");
+            await DisplayAlert("Ошибка", "Не удалось загрузить темы", "OK");
         }
         finally
         {
@@ -225,8 +227,8 @@ public partial class CoursesPage : ContentPage, INotifyPropertyChanged
 
             // Получаем описание курса
             string description = await DisplayPromptAsync(
-                "Новый курс",
-                "Описание курса",
+                "Новая тема",
+                "Описание темы",
                 maxLength: 500);
 
             if (string.IsNullOrWhiteSpace(description)) return;
@@ -291,7 +293,7 @@ public partial class CoursesPage : ContentPage, INotifyPropertyChanged
             {
                 Name = name,
                 Description = description,
-                SubjectId = 1, // Можно добавить выбор предмета позже
+                SubjectId = this.SubjectId,
                 TeacherIds = new List<int> { teacherId },
                 StudentIds = new List<int> { studentId }
             };
@@ -450,7 +452,7 @@ public partial class CoursesPage : ContentPage, INotifyPropertyChanged
             try
             {
                 bool confirm = await DisplayAlert("Подтверждение",
-                    $"Удалить студента {student.FullName} из курса?",
+                    $"Удалить студента {student.FullName} из темы?",
                     "Да", "Нет");
 
                 if (!confirm) return;
@@ -463,7 +465,7 @@ public partial class CoursesPage : ContentPage, INotifyPropertyChanged
                     _currentStudents.Remove(student);
                     CourseStudentsCollection.ItemsSource = null;
                     CourseStudentsCollection.ItemsSource = _currentStudents;
-                    await DisplayAlert("Успех", "Студент удален из курса", "OK");
+                    await DisplayAlert("Успех", "Студент удален из темы", "OK");
                 }
                 else
                 {
@@ -536,7 +538,7 @@ public partial class CoursesPage : ContentPage, INotifyPropertyChanged
                     _currentStudents.Add(addedStudent);
                     CourseStudentsCollection.ItemsSource = null;
                     CourseStudentsCollection.ItemsSource = _currentStudents;
-                    await DisplayAlert("Успех", "Студент добавлен в курс", "OK");
+                    await DisplayAlert("Успех", "Студент добавлен в тему", "OK");
                 }
             }
             else

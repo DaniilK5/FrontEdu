@@ -57,7 +57,7 @@
 
                                 <!-- Количество курсов -->
                                 <Label Grid.Row="2"
-                                       Text="{Binding CoursesCount, StringFormat='Количество курсов: {0}'}"
+                                       Text="{Binding CoursesCount, StringFormat='Количество тем: {0}'}"
                                        TextColor="{StaticResource Gray600}"/>
                             </Grid>
                         </Frame>

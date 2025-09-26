@@ -146,7 +146,7 @@ namespace FrontEdu.Views
                                         Debug.WriteLine($"Final navigation attempt failed: {lastNavEx.Message}");
                                         Debug.WriteLine($"Stack trace: {lastNavEx.StackTrace}");
                                         Debug.WriteLine($"Navigation parameter types: {string.Join(", ", navigationParameter.Select(p => $"{p.Key}: {p.Value?.GetType().FullName}"))}");
-                                        await DisplayAlert("Ошибка", "Не удалось открыть страницу курсов", "OK");
+                                        await DisplayAlert("Ошибка", "Не удалось открыть страницу тем", "OK");
                                     }
                                 }
                             }
@@ -154,14 +154,14 @@ namespace FrontEdu.Views
                         else
                         {
                             Debug.WriteLine("Deserialized subject courses is null");
-                            await DisplayAlert("Ошибка", "Не удалось загрузить информацию о курсах предмета", "OK");
+                            await DisplayAlert("Ошибка", "Не удалось загрузить информацию о темах предмета", "OK");
                         }
                     }
                     else
                     {
                         Debug.WriteLine($"API request failed with status code: {response.StatusCode}");
                         Debug.WriteLine($"Error response content: {responseContent}");
-                        await DisplayAlert("Ошибка", "Не удалось загрузить информацию о курсах предмета", "OK");
+                        await DisplayAlert("Ошибка", "Не удалось загрузить информацию о темах предмета", "OK");
                     }
                 }
                 catch (Exception ex)
@@ -173,7 +173,7 @@ namespace FrontEdu.Views
                         Debug.WriteLine($"Inner exception: {ex.InnerException.Message}");
                         Debug.WriteLine($"Inner exception stack trace: {ex.InnerException.StackTrace}");
                     }
-                    await DisplayAlert("Ошибка", "Не удалось открыть курсы предмета", "OK");
+                    await DisplayAlert("Ошибка", "Не удалось открыть темы предмета", "OK");
                 }
             }
             else

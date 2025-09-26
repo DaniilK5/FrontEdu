@@ -150,7 +150,7 @@ public partial class SubjectPage : ContentPage
                 Debug.WriteLine($"Navigation error in OnCourseSelected: {ex.Message}");
                 Debug.WriteLine($"Stack trace: {ex.StackTrace}");
                 Debug.WriteLine($"Navigation error: {ex}");
-                await DisplayAlert("Ошибка", "Не удалось открыть курс", "OK");
+                await DisplayAlert("Ошибка", "Не удалось открыть тему", "OK");
             }
         }
         else

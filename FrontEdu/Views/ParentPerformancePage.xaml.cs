@@ -250,7 +250,7 @@ public partial class ParentPerformancePage : ContentPage
     {
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
-        public DateTime FirstGradeDate { get; set; }
-        public DateTime LastGradeDate { get; set; }
+        public DateTime? FirstGradeDate { get; set; }
+        public DateTime? LastGradeDate { get; set; }
     }
 }
