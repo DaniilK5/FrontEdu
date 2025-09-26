@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="FrontEdu.Views.ProfileViewPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="Профиль пользователя">
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="15">
+            <!-- Основная информация -->
+            <Frame>
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Основная информация" 
+                           FontAttributes="Bold"
+                           FontSize="18"/>
+
+                    <Grid RowDefinitions="Auto,Auto,Auto" 
+                          ColumnDefinitions="Auto,*"
+                          RowSpacing="10"
+                          ColumnSpacing="10">
+                        
+                        <Label Text="ФИО:" Grid.Row="0" Grid.Column="0"/>
+                        <Label x:Name="FullNameLabel" Grid.Row="0" Grid.Column="1"/>
+                        
+                        <Label Text="Email:" Grid.Row="1" Grid.Column="0"/>
+                        <Label x:Name="EmailLabel" Grid.Row="1" Grid.Column="1"/>
+                        
+                        <Label Text="Роль:" Grid.Row="2" Grid.Column="0"/>
+                        <Label x:Name="RoleLabel" Grid.Row="2" Grid.Column="1"/>
+                    </Grid>
+
+                    <!-- Секция редактирования роли -->
+                    <VerticalStackLayout x:Name="RoleEditSection" 
+                                       IsVisible="false"
+                                       Spacing="10"
+                                       Margin="0,10,0,0">
+                        <BoxView HeightRequest="1" 
+                                Color="{StaticResource Gray300}"
+                                Margin="0,5"/>
+                        
+                        <Label Text="Изменить роль пользователя:"
+                               FontAttributes="Bold"/>
+                        
+                        <Grid ColumnDefinitions="*,Auto" 
+                              ColumnSpacing="10">
+                            <Picker x:Name="RolePicker"
+                                    Grid.Column="0"
+                                    Title="Выберите роль">
+                                <Picker.Items>
+                                    <x:String>Administrator</x:String>
+                                    <x:String>Teacher</x:String>
+                                    <x:String>Student</x:String>
+                                    <x:String>Parent</x:String>
+                                </Picker.Items>
+                            </Picker>
+                            
+                            <Button Text="Сохранить"
+                                    Grid.Column="1"
+                                    Clicked="OnSaveRoleClicked"
+                                    HeightRequest="40"
+                                    WidthRequest="120"/>
+                        </Grid>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Контактная информация -->
+            <Frame>
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Контактная информация"
+                           FontAttributes="Bold"
+                           FontSize="18"/>
+
+                    <Grid RowDefinitions="Auto,Auto,Auto"
+                          ColumnDefinitions="Auto,*"
+                          RowSpacing="10"
+                          ColumnSpacing="10">
+                        
+                        <Label Text="Адрес:" Grid.Row="0" Grid.Column="0"/>
+                        <Label x:Name="AddressLabel" Grid.Row="0" Grid.Column="1"/>
+                        
+                        <Label Text="Телефон:" Grid.Row="1" Grid.Column="0"/>
+                        <Label x:Name="PhoneLabel" Grid.Row="1" Grid.Column="1"/>
+                        
+                        <Label Text="Статус:" Grid.Row="2" Grid.Column="0"/>
+                        <Label x:Name="SocialStatusLabel" Grid.Row="2" Grid.Column="1"/>
+                    </Grid>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Информация студента -->
+            <Frame x:Name="StudentInfoPanel" IsVisible="false">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Информация студента"
+                           FontAttributes="Bold"
+                           FontSize="18"/>
+
+                    <Grid RowDefinitions="Auto,Auto"
+                          ColumnDefinitions="Auto,*"
+                          RowSpacing="10"
+                          ColumnSpacing="10">
+                        
+                        <Label Text="Группа:" Grid.Row="0" Grid.Column="0"/>
+                        <Label x:Name="StudentGroupLabel" Grid.Row="0" Grid.Column="1"/>
+                        
+                        <Label Text="Студ. билет:" Grid.Row="1" Grid.Column="0"/>
+                        <Label x:Name="StudentIdLabel" Grid.Row="1" Grid.Column="1"/>
+                    </Grid>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Информация о группе -->
+            <Frame x:Name="GroupInfoPanel" IsVisible="false">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Информация о группе"
+                           FontAttributes="Bold"
+                           FontSize="18"/>
+
+                    <Grid RowDefinitions="Auto,Auto,Auto"
+                          ColumnDefinitions="Auto,*"
+                          RowSpacing="10"
+                          ColumnSpacing="10">
+                        
+                        <Label Text="Название:" Grid.Row="0" Grid.Column="0"/>
+                        <Label x:Name="GroupNameLabel" Grid.Row="0" Grid.Column="1"/>
+                        
+                        <Label Text="Описание:" Grid.Row="1" Grid.Column="0"/>
+                        <Label x:Name="GroupDescriptionLabel" Grid.Row="1" Grid.Column="1"/>
+                        
+                        <Label Text="Куратор:" Grid.Row="2" Grid.Column="0"/>
+                        <Label x:Name="CuratorNameLabel" Grid.Row="2" Grid.Column="1"/>
+                    </Grid>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Индикатор загрузки -->
+            <ActivityIndicator x:Name="LoadingIndicator"
+                             IsVisible="false"
+                             IsRunning="{Binding Source={RelativeSource Self}, Path=IsVisible}"
+                             HorizontalOptions="Center"
+                             VerticalOptions="Center"/>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

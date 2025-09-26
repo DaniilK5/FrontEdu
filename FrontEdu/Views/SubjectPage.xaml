@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="FrontEdu.Views.SubjectPage"
+    Title="Предмет">
+
+    <ScrollView>
+        <Grid RowDefinitions="*,Auto">
+            <VerticalStackLayout Grid.Row="0" Spacing="20" Padding="20">
+                <!-- Основная информация о предмете -->
+                <Frame Padding="15" BorderColor="{StaticResource Gray300}">
+                    <VerticalStackLayout Spacing="10">
+                        <Label
+                            Text="{Binding Name}"
+                            FontSize="24"
+                            FontAttributes="Bold"/>
+                        <Label
+                            Text="{Binding Code}"
+                            TextColor="{StaticResource Primary}"
+                            FontSize="16"/>
+                        <Label
+                            Text="{Binding Description}"
+                            TextColor="{StaticResource Gray900}"/>
+                    </VerticalStackLayout>
+                </Frame>
+
+                <!-- Список курсов -->
+                <Label
+                    Text="Курсы"
+                    FontSize="20"
+                    FontAttributes="Bold"
+                    Margin="0,10"/>
+
+                <CollectionView
+                    x:Name="CoursesCollection"
+                    SelectionMode="Single"
+                    SelectionChanged="OnCourseSelected">
+                    <CollectionView.EmptyView>
+                        <VerticalStackLayout
+                            HorizontalOptions="Center"
+                            VerticalOptions="Center">
+                            <Label
+                                Text="Нет курсов"
+                                FontSize="18"
+                                TextColor="{StaticResource Gray500}"/>
+                        </VerticalStackLayout>
+                    </CollectionView.EmptyView>
+
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Frame
+                                Margin="0,5"
+                                Padding="15"
+                                BorderColor="{StaticResource Gray300}">
+                                <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <Label
+                                            Text="{Binding Name}"
+                                            FontSize="18"
+                                            FontAttributes="Bold"/>
+                                        <Label
+                                            Grid.Column="1"
+                                            Text="{Binding CreatedAt, StringFormat='{0:dd.MM.yyyy}'}"
+                                            TextColor="{StaticResource Gray600}"/>
+                                    </Grid>
+
+                                    <Label
+                                        Grid.Row="1"
+                                        Text="{Binding Description}"
+                                        TextColor="{StaticResource Gray900}"/>
+
+                                    <Grid
+                                        Grid.Row="2"
+                                        ColumnDefinitions="*,Auto">
+                                        <CollectionView
+                                            ItemsSource="{Binding Teachers}"
+                                            HeightRequest="60">
+                                            <CollectionView.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Label
+                                                        Text="{Binding FullName}"
+                                                        TextColor="{StaticResource Primary}"/>
+                                                </DataTemplate>
+                                            </CollectionView.ItemTemplate>
+                                        </CollectionView>
+
+                                        <StackLayout
+                                            Grid.Column="1"
+                                            Orientation="Horizontal"
+                                            Spacing="5">
+                                            <Label Text="Студентов:"/>
+                                            <Label
+                                                Text="{Binding StudentsCount}"
+                                                FontAttributes="Bold"/>
+                                        </StackLayout>
+                                    </Grid>
+                                </Grid>
+                            </Frame>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </VerticalStackLayout>
+
+            <!-- Индикатор загрузки -->
+            <ActivityIndicator
+                x:Name="LoadingIndicator"
+                Grid.Row="1"
+                IsVisible="false"
+                IsRunning="{Binding Source={RelativeSource Self}, Path=IsVisible}"
+                HorizontalOptions="Center"
+                VerticalOptions="Center"/>
+        </Grid>
+    </ScrollView>
+
+</ContentPage>

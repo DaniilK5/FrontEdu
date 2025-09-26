@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="FrontEdu.Views.DirectChatPage">
+    <Grid RowDefinitions="Auto,*,Auto">
+        <!-- Панель навигации 
+        <Grid Grid.Row="0" 
+              BackgroundColor="{StaticResource Gray200}"
+              Padding="10,5">
+            <HorizontalStackLayout Spacing="10">
+                <Button Text="←" 
+                        Clicked="OnBackClicked"
+                        HeightRequest="40"
+                        WidthRequest="40"
+                        FontSize="20"/>
+                <Label Text="Назад"
+                       VerticalOptions="Center"/>
+            </HorizontalStackLayout>
+        </Grid>      -->
+
+        <!-- Область сообщений -->
+        <CollectionView x:Name="MessagesCollection"
+                       Grid.Row="1"
+                       ItemsSource="{Binding Messages}"
+                       RemainingItemsThreshold="2"
+                       RemainingItemsThresholdReached="OnLoadMoreMessages"
+                       Margin="0,5,0,0">
+            <!-- Добавляем ItemsLayout для явного указания направления -->
+            <CollectionView.ItemsLayout>
+                <LinearItemsLayout Orientation="Vertical" 
+                                  ItemSpacing="5"/>
+            </CollectionView.ItemsLayout>
+            <!-- Существующий ItemTemplate остается без изменений -->
+            <CollectionView.ItemTemplate>
+                
+                <DataTemplate>
+                    <Grid Padding="10">
+                        <Frame BackgroundColor="{Binding IsFromCurrentUser, Converter={StaticResource MessageColorConverter}}"
+                               Padding="10"
+                               HorizontalOptions="{Binding IsFromCurrentUser, Converter={StaticResource MessageAlignmentConverter}}"
+                               BorderColor="Gray">
+                            <VerticalStackLayout>
+                                <Grid ColumnDefinitions="*, Auto">
+                                    <Label Grid.Column="0"
+                                           Text="{Binding Sender.FullName}"
+                                           FontAttributes="Bold"
+                                           TextColor="{Binding IsFromCurrentUser, Converter={StaticResource MessageTextColorConverter}}">
+                                        <Label.GestureRecognizers>
+                                            <TapGestureRecognizer 
+                                                CommandParameter="{Binding Sender.Id}"
+                                                Tapped="OnUserNameTapped"/>
+                                        </Label.GestureRecognizers>
+                                    </Label>
+                                    <!-- Кнопка редактирования -->
+                                    <Button Grid.Column="1"
+                                            Text="✎"
+                                            IsVisible="{Binding IsFromCurrentUser}"
+                                            Clicked="OnEditMessageClicked"
+                                            CommandParameter="{Binding .}"
+                                            Style="{StaticResource TextButton}"
+                                            Padding="5"
+                                            FontSize="16"/>
+                                </Grid>
+                                <Label Text="{Binding Content}"
+                                       TextColor="{Binding IsFromCurrentUser, Converter={StaticResource MessageTextColorConverter}}"
+                                       Margin="0,5"/>
+                                <Label Text="{Binding Timestamp, StringFormat='{0:HH:mm}'}"
+                                       FontSize="Small"
+                                       TextColor="{Binding IsFromCurrentUser, Converter={StaticResource MessageTimeColorConverter}}"/>
+                                <!-- Кнопка вложения -->
+                                <Button Text="{Binding AttachmentName}"
+                                        IsVisible="{Binding HasAttachment}"
+                                        Clicked="OnAttachmentClicked"
+                                        CommandParameter="{Binding Id}"
+                                        BackgroundColor="Transparent"
+                                        TextColor="{Binding IsFromCurrentUser, Converter={StaticResource MessageTextColorConverter}}"/>
+                            </VerticalStackLayout>
+                        </Frame>
+                    </Grid>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+        <!-- Панель редактирования сообщения -->
+        <Grid x:Name="EditMessagePanel" 
+              Grid.Row="1" 
+              IsVisible="False"
+              BackgroundColor="#80000000"
+              VerticalOptions="End">
+            <Frame Margin="10" Padding="10">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Редактирование сообщения" 
+                           FontAttributes="Bold"/>
+                    <Entry x:Name="EditMessageEntry"/>
+                    <HorizontalStackLayout Spacing="10">
+                        <Button Text="Сохранить" 
+                                Clicked="OnSaveEditClicked"/>
+                        <Button Text="Отмена" 
+                                Clicked="OnCancelEditClicked"
+                                BackgroundColor="{StaticResource Gray500}"/>
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Frame>
+        </Grid>
+
+        <!-- Панель ввода -->
+        <Grid Grid.Row="2" 
+              RowDefinitions="Auto,Auto"
+              ColumnDefinitions="*, Auto, Auto" 
+              Padding="10">
+            <!-- Индикатор выбранного файла -->
+            <Grid Grid.Row="0" Grid.ColumnSpan="3"
+                  IsVisible="{Binding Source={x:Reference SelectedFileLabel}, Path=IsVisible}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Label x:Name="SelectedFileLabel"
+                       Grid.Column="0"
+                       IsVisible="False"
+                       Text="Выбран файл для отправки"
+                       TextColor="Gray"
+                       FontSize="12"
+                       VerticalOptions="Center"/>
+                <Button Grid.Column="1"
+                        Text="✕"
+                        FontSize="12"
+                        HeightRequest="30"
+                        WidthRequest="30"
+                        Padding="0"
+                        Margin="5,0,0,0"
+                        Clicked="OnClearFileClicked"/>
+            </Grid>
+                                                                                               
+            <Entry Grid.Row="1"
+                   Grid.Column="0"
+                   x:Name="MessageEntry"
+                   Placeholder="Введите сообщение..."/>
+            <Button Grid.Row="1"
+                    Grid.Column="1"
+                    Text="📎"
+                    Clicked="OnAttachFileClicked"/>
+            <Button Grid.Row="1"
+                    Grid.Column="2"
+                    Text="Отправить"
+                    Clicked="OnSendClicked"/>
+        </Grid>
+    </Grid>
+</ContentPage>

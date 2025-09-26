@@ -1,71 +1,337 @@
-﻿using FrontEdu.Views;
+﻿using FrontEdu.Models.Auth;
+using FrontEdu.Services;
+using FrontEdu.Views;
 using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
+using System.Net.Http.Json;
 
 namespace FrontEdu
 {
     public partial class AppShell : Shell
     {
+        private UserPermissionsResponse _userPermissions;
         public AppShell()
         {
             InitializeComponent();
             RegisterRoutes();
+            Loaded += OnShellLoaded;
         }
-
+        private async void OnShellLoaded(object? sender, EventArgs e)
+        {
+            SetupMenu();
+        }
         private void RegisterRoutes()
         {
-            // Регистрация маршрутов для навигации
+            // Базовые маршруты (должны быть определены в XAML)
             Routing.RegisterRoute("MainPage", typeof(MainPage));
             Routing.RegisterRoute("Login", typeof(LoginPage));
+
+            // Регистрация маршрутов для навигации
+            Routing.RegisterRoute("MainPage", typeof(MainPage));
+            Routing.RegisterRoute("Login", typeof(LoginPage));  
             Routing.RegisterRoute("Register", typeof(RegisterPage));
-            Routing.RegisterRoute("CoursesPage", typeof(CoursesPage));
-            Routing.RegisterRoute("AssignmentsPage", typeof(AssignmentsPage));
+
             Routing.RegisterRoute("ProfilePage", typeof(ProfilePage));
             Routing.RegisterRoute("SettingsPage", typeof(SettingsPage));
             Routing.RegisterRoute("UsersPage", typeof(UsersPage));
+            Routing.RegisterRoute("GroupChatPage", typeof(GroupChatPage));
+            Routing.RegisterRoute("DirectChatPage", typeof(DirectChatPage));
+            Routing.RegisterRoute("ChatPage", typeof(ChatPage));
+            Routing.RegisterRoute("GroupChatsPage", typeof(GroupChatsPage));
+            Routing.RegisterRoute("ProfileViewPage", typeof(ProfileViewPage));
+            Routing.RegisterRoute("AssignmentsPage", typeof(AssignmentsPage));
+            Routing.RegisterRoute("AssignmentDetailsPage", typeof(AssignmentDetailsPage));
+
+            Routing.RegisterRoute("SubjectsPage", typeof(SubjectsPage));
+
+            Routing.RegisterRoute("SubjectPage", typeof(SubjectPage));
+            Routing.RegisterRoute("courses", typeof(CoursesPage));
+            Routing.RegisterRoute("//courses", typeof(CoursesPage));
+            Routing.RegisterRoute("///courses", typeof(CoursesPage));
+
+            Routing.RegisterRoute("AbsencesPage", typeof(AbsencesPage));
+            // Добавляем маршрут для страницы куратора
+            Routing.RegisterRoute("CuratorPage", typeof(CuratorPage));
+
+            // Добавляем маршрут для страницы управления группами
+            Routing.RegisterRoute("GroupManagementPage", typeof(GroupManagementPage));
+
+            Routing.RegisterRoute("SchedulePage", typeof(SchedulePage));
+
+            Routing.RegisterRoute("ParentPerformancePage", typeof(ParentPerformancePage));
+
+            Routing.RegisterRoute("StudentGradesPage", typeof(StudentGradesPage));
+            
+            Routing.RegisterRoute("HelpPage", typeof(HelpPage));
         }
 
         private async void SetupMenu()
         {
             try
             {
-                // Получаем токен
                 var token = await SecureStorage.GetAsync("auth_token");
                 if (string.IsNullOrEmpty(token))
                 {
-                    // Если токена нет, показываем только страницу входа
-                    Current.GoToAsync("//login");
+                    AddLoginItem();
                     return;
                 }
 
-                // Декодируем JWT токен для получения роли
-                var handler = new JwtSecurityTokenHandler();
-                var jsonToken = handler.ReadToken(token) as JwtSecurityToken;
-                var role = jsonToken?.Claims.FirstOrDefault(c => c.Type.Contains("role"))?.Value;
+                var httpClient = await AppConfig.CreateHttpClientAsync();
+                var response = await httpClient.GetAsync("api/Profile/me/permissions");
 
-                // Настраиваем видимость пунктов меню в зависимости от роли
-                foreach (var item in Items)
+                if (!response.IsSuccessStatusCode)
                 {
-                    if (item is FlyoutItem flyoutItem)
-                    {
-                        switch (flyoutItem.Title)
-                        {
-                            case "Управление":
-                                flyoutItem.IsVisible = role == "Administrator";
-                                break;
-                            case "Курсы":
-                            case "Задания":
-                                flyoutItem.IsVisible = role == "Teacher" || role == "Student";
-                                break;
-                            // Добавьте другие case по необходимости
-                        }
-                    }
+                    Debug.WriteLine("Failed to get permissions");
+                    AddLoginItem();
+                    return;
                 }
+
+                _userPermissions = await response.Content.ReadFromJsonAsync<UserPermissionsResponse>();
+
+                // Очищаем существующие элементы
+                Items.Clear();
+
+                // Добавляем элементы меню в зависимости от разрешений
+                AddMainPageItem();
+
+                if (_userPermissions.Permissions.ManageUsers)
+                {
+                    AddAdminSection();
+                }
+
+                // Профиль доступен всем авторизованным
+                AddProfileSection();
+
+                if (_userPermissions.Permissions.SendMessages)
+                {
+                    AddChatsSection();
+                }
+
+                if (_userPermissions.Categories.Courses.CanView || 
+                    _userPermissions.Categories.Assignments.CanView || 
+                    _userPermissions.Categories.Assignments.CanSubmit)
+                {
+                    AddEducationSection();
+                }
+
+                if (_userPermissions.Permissions.ManageSettings)
+                {
+                    AddSettingsSection();
+                }
+
+                // После создания всех элементов меню, навигируем на главную страницу
+                await MainThread.InvokeOnMainThreadAsync(async () =>
+                {
+                    try
+                    {
+                        await Current.GoToAsync("//MainPage");
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"Navigation error: {ex}");
+                    }
+                });
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"Error setting up menu: {ex}");
+                AddLoginItem();
             }
+        }
+
+        private void AddLoginItem()
+        {
+            Items.Clear();
+            Items.Add(new ShellContent
+            {
+                Title = "Вход",
+                Route = "Login",
+                ContentTemplate = new DataTemplate(typeof(LoginPage))
+            });
+        }
+
+        private void AddMainPageItem()
+        {
+            if (MenuItemExists("Главная")) return;
+            
+            var flyoutItem = new FlyoutItem
+            {
+                Title = "Главная",
+                Route = "MainPage"
+            };
+            flyoutItem.Items.Add(new ShellContent
+            {
+                ContentTemplate = new DataTemplate(typeof(MainPage))
+            });
+            Items.Add(flyoutItem);
+        }
+
+        private void AddAdminSection()
+        {
+            if (MenuItemExists("Управление")) return;
+
+            var adminSection = new FlyoutItem
+            {
+                Title = "Управление"
+            };
+            adminSection.Items.Add(new ShellContent
+            {
+                Title = "Пользователи",
+                Route = "UsersPage",
+                ContentTemplate = new DataTemplate(typeof(UsersPage))
+            });
+            
+            // Добавляем пункт управления группами
+            adminSection.Items.Add(new ShellContent
+            {
+                Title = "Управление группами",
+                Route = "GroupManagementPage",
+                ContentTemplate = new DataTemplate(typeof(GroupManagementPage))
+            });
+            
+            Items.Add(adminSection);
+        }
+
+        private void AddProfileSection()
+        {
+            if (MenuItemExists("Профиль")) return;
+
+            var profileSection = new FlyoutItem
+            {
+                Title = "Профиль"
+            };
+            profileSection.Items.Add(new ShellContent
+            {
+                Title = "Мой профиль",
+                Route = "ProfilePage",
+                ContentTemplate = new DataTemplate(typeof(ProfilePage))
+            });
+            Items.Add(profileSection);
+        }
+
+        private void AddChatsSection()
+        {
+            if (MenuItemExists("Чаты")) return;
+
+            var chatsSection = new FlyoutItem
+            {
+                Title = "Чаты"
+            };
+            var tab = new Tab();
+            tab.Items.Add(new ShellContent
+            {
+                Title = "Личные чаты",
+                Route = "ChatPage",
+                ContentTemplate = new DataTemplate(typeof(ChatPage))
+            });
+            tab.Items.Add(new ShellContent
+            {
+                Title = "Групповые чаты",
+                Route = "GroupChatsPage",
+                ContentTemplate = new DataTemplate(typeof(GroupChatsPage))
+            });
+            chatsSection.Items.Add(tab);
+            Items.Add(chatsSection);
+        }
+
+        private void AddEducationSection()
+        {
+            if (MenuItemExists("Учебные материалы")) return;
+
+            var educationSection = new FlyoutItem
+            {
+                Title = "Учебные материалы"
+            };
+            var tab = new Tab();
+
+            if (_userPermissions.Categories.Courses.CanView)
+            {
+                tab.Items.Add(new ShellContent
+                {
+                    Title = "Предметы",
+                    Route = "SubjectsPage",
+                    ContentTemplate = new DataTemplate(typeof(SubjectsPage))
+                });
+            }
+
+            if (_userPermissions.Categories.Courses.CanView)
+            {
+                tab.Items.Add(new ShellContent
+                {
+                    Title = "Курсы",
+                    Route = "CoursesPage",
+                    ContentTemplate = new DataTemplate(typeof(CoursesPage))
+                });
+            }
+
+            if (_userPermissions.Categories.Assignments.CanView ||
+                _userPermissions.Categories.Assignments.CanSubmit)
+            {
+                tab.Items.Add(new ShellContent
+                {
+                    Title = "Задания",
+                    Route = "AssignmentsPage",
+                    ContentTemplate = new DataTemplate(typeof(AssignmentsPage))
+                });
+            }
+
+            // Добавляем пункт меню пропусков если есть права
+            if (_userPermissions.Categories.Schedule.CanView || 
+                _userPermissions.Categories.Schedule.CanManage)
+            {
+                tab.Items.Add(new ShellContent
+                {
+                    Title = "Пропуски",
+                    Route = "AbsencesPage",
+                    ContentTemplate = new DataTemplate(typeof(AbsencesPage))
+                });
+            }
+
+            // Добавляем пункт меню куратора если пользователь является куратором
+            if (_userPermissions.Categories.Schedule.CanManage && 
+                _userPermissions.Role?.ToLower() == "teacher")
+            {
+                tab.Items.Add(new ShellContent
+                {
+                    Title = "Кураторство",
+                    Route = "CuratorPage",
+                    ContentTemplate = new DataTemplate(typeof(CuratorPage))
+                });
+            }
+
+            educationSection.Items.Add(tab);
+            Items.Add(educationSection);
+        }
+
+
+        private void AddSettingsSection()
+        {
+            if (MenuItemExists("Настройки")) return;
+
+            var settingsSection = new FlyoutItem
+            {
+                Title = "Настройки"
+            };
+            settingsSection.Items.Add(new ShellContent
+            {
+                Route = "SettingsPage",
+                ContentTemplate = new DataTemplate(typeof(SettingsPage))
+            });
+            
+            // Добавляем пункт справки
+            settingsSection.Items.Add(new ShellContent
+            {
+                Title = "Справка",
+                Route = "HelpPage",
+                ContentTemplate = new DataTemplate(typeof(HelpPage))
+            });
+            
+            Items.Add(settingsSection);
+        }
+
+        private bool MenuItemExists(string title)
+        {
+            return Items.Any(item => item is FlyoutItem flyoutItem && flyoutItem.Title == title);
         }
 
         // Навигация на конкретную страницу
@@ -86,5 +352,4 @@ namespace FrontEdu
             await Shell.Current.GoToAsync("..");
         }
     }
-
 }

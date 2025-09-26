@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="FrontEdu.Views.AssignmentsPage"
+             Title="Задания курса">
+
+    <Grid RowDefinitions="Auto,*">
+        <!-- Верхняя панель -->
+        <Grid Grid.Row="0" 
+              Padding="10"
+              ColumnDefinitions="*,Auto"
+              BackgroundColor="{StaticResource Gray200}">
+
+            <!-- Кнопка добавления задания -->
+            <Button Grid.Column="1"
+                    x:Name="AddAssignmentButton"
+                    Text="+"
+                    FontSize="20"
+                    WidthRequest="50"
+                    Margin="5,0,0,0"
+                    IsVisible="False"
+                    Clicked="OnAddAssignmentClicked"/>
+        </Grid>
+        
+        <!-- Список заданий -->
+        <Grid Grid.Row="1">
+            <RefreshView x:Name="AssignmentsRefreshView">
+            <CollectionView x:Name="AssignmentsCollection"
+                      SelectionMode="Single"
+                      SelectionChanged="OnAssignmentSelected">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Frame Margin="10,5"
+                               Padding="15"
+                               BorderColor="{StaticResource Gray300}">
+                            <Grid RowDefinitions="Auto,Auto,Auto"
+                                  RowSpacing="10">
+                                <!-- Заголовок и срок сдачи -->
+                                <Grid Grid.Row="0" 
+                                      ColumnDefinitions="*,Auto">
+                                    <Label Text="{Binding Title}"
+                                           FontSize="18"
+                                           FontAttributes="Bold"/>
+                                    <Label Grid.Column="1"
+                                           Text="{Binding Deadline, StringFormat='Срок: {0:dd.MM.yyyy HH:mm}'}"
+                                           TextColor="{StaticResource Gray600}"/>
+                                </Grid>
+
+                                <!-- Описание -->
+                                <Label Grid.Row="1"
+                                       Text="{Binding Description}"
+                                       LineBreakMode="WordWrap"/>
+
+                                <!-- Преподаватель -->
+                                <StackLayout Grid.Row="2" 
+                                           Orientation="Horizontal">
+                                    <Label Text="Преподаватель:"/>
+                                    <Label Text="{Binding Instructor.FullName}"
+                                           TextColor="{StaticResource Primary}"
+                                           Margin="5,0,0,0"/>
+                                </StackLayout>
+                            </Grid>
+                        </Frame>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+                <CollectionView.EmptyView>
+                    <StackLayout HorizontalOptions="Center" 
+                               VerticalOptions="Center">
+                        <Label Text="Нет заданий"
+                               FontSize="18"
+                               TextColor="{StaticResource Gray600}"/>
+                    </StackLayout>
+                </CollectionView.EmptyView>
+            </CollectionView>
+        </RefreshView>
+
+        <!-- Индикатор загрузки -->
+        <ActivityIndicator x:Name="LoadingIndicator"
+                          IsVisible="false"
+                          IsRunning="{Binding Source={RelativeSource Self}, Path=IsVisible}"
+                          HorizontalOptions="Center"
+                          VerticalOptions="Center"/>
+        </Grid>
+    </Grid>
+</ContentPage>

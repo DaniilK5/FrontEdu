@@ -21,6 +21,12 @@
                         HorizontalOptions="Center"/>
                     
                     <Button 
+                        x:Name="SubjectsButton"
+                        Text="Предметы"
+                        Clicked="OnSubjectsClicked"
+                        HorizontalOptions="Fill"/>
+                    
+                    <Button 
                         x:Name="CoursesButton"
                         Text="Курсы"
                         Clicked="OnCoursesClicked"
@@ -30,6 +36,14 @@
                         x:Name="AssignmentsButton"
                         Text="Задания"
                         Clicked="OnAssignmentsClicked"
+                        HorizontalOptions="Fill"/>
+
+                    <!-- В секцию обучения добавьте кнопку -->
+                    <Button 
+                        x:Name="GradesButton"
+                        Text="Мои оценки"
+                        Clicked="OnGradesClicked"
+                        IsVisible="{Binding IsStudent}"
                         HorizontalOptions="Fill"/>
                 </VerticalStackLayout>
             </Frame>
@@ -68,6 +82,92 @@
                         x:Name="UsersButton"
                         Text="Пользователи"
                         Clicked="OnUsersClicked"
+                        HorizontalOptions="Fill"/>
+                    
+                    <Button 
+                        x:Name="GroupManagementButton"
+                        Text="Управление группами"
+                        Clicked="OnGroupManagementClicked"
+                        HorizontalOptions="Fill"/>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Добавьте новую секцию для чатов после существующих секций -->
+            <Frame Padding="15" BorderColor="Gray">
+                <VerticalStackLayout Spacing="15">
+                    <Label 
+                        Text="Сообщения"
+                        FontSize="24"
+                        HorizontalOptions="Center"/>
+                    
+                    <Button 
+                        x:Name="ChatButton"
+                        Text="Личные сообщения"
+                        Clicked="OnChatClicked"
+                        HorizontalOptions="Fill"/>
+                    
+                    <Button 
+                        x:Name="GroupChatsButton"
+                        Text="Групповые чаты"
+                        Clicked="OnGroupChatsClicked"
+                        HorizontalOptions="Fill"/>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- В существующем Grid добавьте раздел расписания -->
+            <Frame Padding="15" BorderColor="Gray">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Расписание" 
+                           FontSize="24"
+                           HorizontalOptions="Center"/>
+                    <Button x:Name="AbsencesButton"
+                            Text="Пропуски"
+                            Clicked="OnAbsencesClicked"
+                            IsVisible="False"/>
+                    <Button x:Name="ScheduleButton"
+                            Text="Расписание"
+                            Clicked="OnScheduleClicked"
+                            IsVisible="True"/>
+                    <!-- Другие кнопки раздела расписания -->
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- После секции расписания -->
+            <Frame x:Name="CuratorSection" Padding="15" BorderColor="Gray" IsVisible="False">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Кураторство" 
+                           FontSize="24"
+                           HorizontalOptions="Center"/>
+                    <Button x:Name="CuratorButton"
+                            Text="Показатели группы"
+                            Clicked="OnCuratorClicked"/>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Добавьте в существующий Frame или создайте новый -->
+            <Frame x:Name="ParentSection" Padding="15" BorderColor="Gray" IsVisible="False">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Дети" 
+                           FontSize="24"
+                           HorizontalOptions="Center"/>
+                    <Button x:Name="ChildrenPerformanceButton"
+                            Text="Успеваемость детей"
+                            Clicked="OnChildrenPerformanceClicked"/>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Секция справки -->
+            <Frame Padding="15" BorderColor="Gray">
+                <VerticalStackLayout Spacing="15">
+                    <Label 
+                        Text="Помощь"
+                        FontSize="24"
+                        HorizontalOptions="Center"/>
+                    
+                    <Button 
+                        x:Name="HelpButton"
+                        Text="Справка"
+                        Clicked="OnHelpClicked"
                         HorizontalOptions="Fill"/>
                 </VerticalStackLayout>
             </Frame>

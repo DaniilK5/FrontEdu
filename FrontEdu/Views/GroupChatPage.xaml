@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="FrontEdu.Views.GroupChatPage">
+    <Grid RowDefinitions="Auto,*,Auto">
+        <!-- Информация о групповом чате -->
+        <Grid Grid.Row="0" 
+              BackgroundColor="{StaticResource Gray200}"
+              Padding="10">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Название чата -->
+            <Label Grid.Row="0" Grid.Column="0"
+                   x:Name="GroupNameLabel"
+                   FontSize="18"
+                   FontAttributes="Bold"/>
+            
+            <!-- Количество участников -->
+            <Label Grid.Row="1" Grid.Column="0"
+                   x:Name="MembersCountLabel"
+                   FontSize="14"
+                   TextColor="{StaticResource Gray600}"/>
+
+            <!-- Кнопка информации о чате -->
+            <Button Grid.Row="0" Grid.Column="1"
+                    Grid.RowSpan="2"
+                    x:Name="InfoButton"
+                    Text="ℹ️"
+                    FontSize="20"
+                    HeightRequest="40"
+                    WidthRequest="40"
+                    Margin="0,0,5,0"
+                    Clicked="OnChatInfoClicked"/>
+
+            <!-- Кнопка управления участниками -->
+            <Button Grid.Row="0" Grid.Column="2"
+                    Grid.RowSpan="2"
+                    x:Name="ManageMembersButton"
+                    Text="👥"
+                    FontSize="20"
+                    HeightRequest="40"
+                    WidthRequest="40"
+                    Clicked="OnManageMembersClicked"/>
+        </Grid>
+
+        <!-- Область сообщений -->
+        <CollectionView x:Name="MessagesCollection"
+                       Grid.Row="1"
+                       ItemsSource="{Binding Messages}"
+                       Margin="0,5,0,0">
+            <CollectionView.ItemsLayout>
+                <LinearItemsLayout Orientation="Vertical" 
+                                 ItemSpacing="5"/>
+            </CollectionView.ItemsLayout>
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <Grid Padding="10">
+                        <Frame BackgroundColor="{Binding IsFromCurrentUser, Converter={StaticResource MessageColorConverter}}"
+                               Padding="10"
+                               HorizontalOptions="{Binding IsFromCurrentUser, Converter={StaticResource MessageAlignmentConverter}}"
+                               BorderColor="Gray">
+                            <VerticalStackLayout>
+                                <Grid ColumnDefinitions="*, Auto">
+                                    <Label Grid.Column="0"
+                                           Text="{Binding Sender.FullName}"
+                                           FontAttributes="Bold"
+                                           TextColor="{Binding IsFromCurrentUser, Converter={StaticResource MessageTextColorConverter}}">
+                                        <Label.GestureRecognizers>
+                                            <TapGestureRecognizer 
+                                                CommandParameter="{Binding Sender.Id}"
+                                                Tapped="OnUserNameTapped"/>
+                                        </Label.GestureRecognizers>
+                                    </Label>
+                                    <!-- Кнопка редактирования -->
+                                    <Button Grid.Column="1"
+                                            Text="✎"
+                                            IsVisible="{Binding IsFromCurrentUser}"
+                                            Clicked="OnEditMessageClicked"
+                                            CommandParameter="{Binding .}"
+                                            Style="{StaticResource TextButton}"
+                                            Padding="5"
+                                            FontSize="16"/>
+                                </Grid>
+                                <Label Text="{Binding Content}"
+                                       TextColor="{Binding IsFromCurrentUser, Converter={StaticResource MessageTextColorConverter}}"
+                                       Margin="0,5"/>
+                                <Label Text="{Binding Timestamp, StringFormat='{0:HH:mm}'}"
+                                       FontSize="Small"
+                                       TextColor="{Binding IsFromCurrentUser, Converter={StaticResource MessageTimeColorConverter}}"/>
+                                <!-- Кнопка вложения -->
+                                <Button Text="{Binding AttachmentName}"
+                                        IsVisible="{Binding HasAttachment}"
+                                        Clicked="OnAttachmentClicked"
+                                        CommandParameter="{Binding Id}"
+                                        BackgroundColor="Transparent"
+                                        TextColor="{Binding IsFromCurrentUser, Converter={StaticResource MessageTextColorConverter}}"/>
+                            </VerticalStackLayout>
+                        </Frame>
+                    </Grid>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+        <!-- Панель редактирования сообщения -->
+        <Grid x:Name="EditMessagePanel" 
+              Grid.Row="1" 
+              IsVisible="False"
+              BackgroundColor="#80000000"
+              VerticalOptions="End">
+            <Frame Margin="10" Padding="10">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Редактирование сообщения" 
+                           FontAttributes="Bold"/>
+                    <Entry x:Name="EditMessageEntry"/>
+                    <HorizontalStackLayout Spacing="10">
+                        <Button Text="Сохранить" 
+                                Clicked="OnSaveEditClicked"/>
+                        <Button Text="Отмена" 
+                                Clicked="OnCancelEditClicked"
+                                BackgroundColor="{StaticResource Gray500}"/>
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Frame>
+        </Grid>
+
+        <!-- Панель управления участниками -->
+        <Grid x:Name="ManageMembersPanel"
+              Grid.Row="1"
+              IsVisible="False"
+              BackgroundColor="#80000000">
+            <Frame Margin="20" 
+                   Padding="15" 
+                   VerticalOptions="Center">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Управление участниками"
+                           FontSize="18"
+                           FontAttributes="Bold"/>
+                    
+                    <CollectionView x:Name="MembersCollection"
+                                  HeightRequest="200">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Padding="5" 
+                                      ColumnDefinitions="*, Auto">
+                                    <Label Grid.Column="0"
+                                           Text="{Binding FullName}"
+                                           VerticalOptions="Center"/>
+                                    <Button Grid.Column="1"
+                                            Text="✕"
+                                            IsVisible="{Binding CanBeRemoved}"
+                                            Clicked="OnRemoveMemberClicked"
+                                            CommandParameter="{Binding Id}"
+                                            HeightRequest="30"
+                                            WidthRequest="30"
+                                            Padding="0"/>
+                                </Grid>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+
+                    <Button Text="Добавить участников"
+                            Clicked="OnAddMembersClicked"/>
+                    
+                    <Button Text="Закрыть"
+                            Clicked="OnCloseMembersPanelClicked"
+                            BackgroundColor="{StaticResource Gray500}"/>
+                </VerticalStackLayout>
+            </Frame>
+        </Grid>
+
+        <!-- Панель информации о чате -->
+        <Grid x:Name="ChatInfoPanel"
+              Grid.Row="1"
+              IsVisible="False"
+              BackgroundColor="#80000000">
+            <Frame Margin="20" 
+                   Padding="15" 
+                   VerticalOptions="Center"
+                   MaximumWidthRequest="400">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Информация о чате"
+                           FontSize="18"
+                           FontAttributes="Bold"
+                           HorizontalOptions="Center"/>
+
+                    <BoxView HeightRequest="1" 
+                             Color="{StaticResource Gray300}"/>
+
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="Основная информация" 
+                               FontAttributes="Bold"/>
+                        <Label Text="{Binding Source={x:Reference GroupNameLabel}, Path=Text, StringFormat='Название: {0}'}"/>
+                        <Label x:Name="CreatedAtLabel"/>
+                    </VerticalStackLayout>
+
+                    <BoxView HeightRequest="1" 
+                             Color="{StaticResource Gray300}"/>
+
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="Статистика" 
+                               FontAttributes="Bold"/>
+                        <Label x:Name="DetailedStatisticsLabel"
+                               FontSize="14"
+                               TextColor="{StaticResource Gray600}"/>
+                    </VerticalStackLayout>
+
+                    <BoxView HeightRequest="1" 
+                             Color="{StaticResource Gray300}"/>
+
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="Ваша информация" 
+                               FontAttributes="Bold"/>
+                        <Label x:Name="UserInfoLabel"/>
+                    </VerticalStackLayout>
+
+                    <Button Text="Закрыть"
+                            Clicked="OnCloseChatInfoClicked"
+                            HorizontalOptions="Center"
+                            BackgroundColor="{StaticResource Gray500}"/>
+                </VerticalStackLayout>
+            </Frame>
+        </Grid>
+
+        <!-- Панель ввода -->
+        <Grid Grid.Row="2" 
+              RowDefinitions="Auto,Auto"
+              ColumnDefinitions="*, Auto, Auto" 
+              Padding="10">
+            <!-- Индикатор выбранного файла -->
+            <Grid Grid.Row="0" Grid.ColumnSpan="3"
+                  IsVisible="{Binding Source={x:Reference SelectedFileLabel}, Path=IsVisible}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Label x:Name="SelectedFileLabel"
+                       Grid.Column="0"
+                       IsVisible="False"
+                       Text="Выбран файл для отправки"
+                       TextColor="Gray"
+                       FontSize="12"
+                       VerticalOptions="Center"/>
+                <Button Grid.Column="1"
+                        Text="✕"
+                        FontSize="12"
+                        HeightRequest="30"
+                        WidthRequest="30"
+                        Padding="0"
+                        Margin="5,0,0,0"
+                        Clicked="OnClearFileClicked"/>
+            </Grid>
+                                                                                               
+            <Entry Grid.Row="1"
+                   Grid.Column="0"
+                   x:Name="MessageEntry"
+                   Placeholder="Введите сообщение..."/>
+            <Button Grid.Row="1"
+                    Grid.Column="1"
+                    Text="📎"
+                    Clicked="OnAttachFileClicked"/>
+            <Button Grid.Row="1"
+                    Grid.Column="2"
+                    Text="Отправить"
+                    Clicked="OnSendClicked"/>
+        </Grid>
+    </Grid>
+</ContentPage>

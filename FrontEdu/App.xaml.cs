@@ -13,7 +13,7 @@ namespace FrontEdu
             AppConfig.ApiBaseUrl = "http://localhost:5105"; // Используем http вместо https для отладки
             CheckTokenOnStartup();
 #else
-            AppConfig.ApiBaseUrl = "https://your-production-api-url/"; 
+            AppConfig.ApiBaseUrl = "http://localhost:5105"; 
 #endif
             MainPage = new NavigationPage(new LoginPage());
         }

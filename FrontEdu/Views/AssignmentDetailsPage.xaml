@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="FrontEdu.Views.AssignmentDetailsPage"
+             Title="Детали задания">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="15">
+            <!-- Основная информация -->
+            <Frame>
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Информация о задании"
+                           FontSize="18"
+                           FontAttributes="Bold"/>
+
+                    <Grid RowDefinitions="Auto,Auto,Auto,Auto"
+                          ColumnDefinitions="Auto,*"
+                          RowSpacing="10"
+                          ColumnSpacing="10">
+
+                        <Label Text="Название:"
+                               Grid.Row="0" Grid.Column="0"/>
+                        <Label x:Name="TitleLabel"
+                               Grid.Row="0" Grid.Column="1"/>
+
+                        <Label Text="Описание:"
+                               Grid.Row="1" Grid.Column="0"/>
+                        <Label x:Name="DescriptionLabel"
+                               Grid.Row="1" Grid.Column="1"/>
+
+                        <Label Text="Срок сдачи:"
+                               Grid.Row="2" Grid.Column="0"/>
+                        <Label x:Name="DeadlineLabel"
+                               Grid.Row="2" Grid.Column="1"/>
+
+                        <Label Text="Преподаватель:"
+                               Grid.Row="3" Grid.Column="0"/>
+                        <Label x:Name="InstructorLabel"
+                               Grid.Row="3" Grid.Column="1"/>
+                    </Grid>
+
+                    <!-- Файл задания -->
+                    <VerticalStackLayout x:Name="AttachmentPanel"
+                                       IsVisible="false"
+                                       Spacing="10">
+                        <BoxView HeightRequest="1"
+                                Color="{StaticResource Gray300}"/>
+                        <Label Text="Прикрепленный файл:"
+                               FontAttributes="Bold"/>
+                        <Button x:Name="DownloadButton"
+                                Text="Скачать файл"
+                                Clicked="OnDownloadClicked"/>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Решения студентов (для преподавателя) -->
+            <Frame x:Name="SubmissionsPanel" IsVisible="false">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Решения студентов"
+                           FontSize="18"
+                           FontAttributes="Bold"/>
+
+                    <CollectionView x:Name="SubmissionsCollection">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Frame Margin="0,5" Padding="10">
+                                    <Grid RowDefinitions="Auto,Auto,Auto,Auto"
+                                          ColumnDefinitions="Auto,*"
+                                          RowSpacing="5"
+                                          ColumnSpacing="10">
+
+                                        <Label Text="Студент:"
+                                               Grid.Row="0" Grid.Column="0"/>
+                                        <Label Text="{Binding Student.FullName}"
+                                               Grid.Row="0" Grid.Column="1"/>
+
+                                        <Label Text="Дата:"
+                                               Grid.Row="1" Grid.Column="0"/>
+                                        <Label Text="{Binding SubmittedAt, StringFormat='{0:dd.MM.yyyy HH:mm}'}"
+                                               Grid.Row="1" Grid.Column="1"/>
+
+                                        <Label Text="Решение:"
+                                               Grid.Row="2" Grid.Column="0"/>
+                                        <Label Text="{Binding Content}"
+                                               Grid.Row="2" Grid.Column="1"/>
+
+                                        <StackLayout Grid.Row="3" Grid.ColumnSpan="2"
+                                                   Orientation="Horizontal"
+                                                   Spacing="10">
+                                            <Button Text="Скачать файл"
+                                                    IsVisible="{Binding HasAttachment}"
+                                                    CommandParameter="{Binding Id}"
+                                                    Clicked="OnSubmissionFileClicked"/>
+
+                                            <Label Text="{Binding Grade.Value, StringFormat='Оценка: {0}'}"
+                                                   IsVisible="{Binding Grade, Converter={StaticResource NotNullConverter}}"
+                                                   VerticalOptions="Center"/>
+                                            <!-- Кнопка оценки для преподавателя -->
+                                            <Button Text="Оценить"
+                                                IsVisible="{Binding Grade, Converter={StaticResource IsNullConverter}}"
+                                                CommandParameter="{Binding Id}"
+                                                Clicked="OnGradeSubmissionClicked"/>
+
+                                        </StackLayout>
+                                    </Grid>
+                                </Frame>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                        <CollectionView.EmptyView>
+                            <Label Text="Нет решений"
+                                   HorizontalOptions="Center"
+                                   TextColor="{StaticResource Gray500}"/>
+                        </CollectionView.EmptyView>
+                    </CollectionView>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Панель отправки решения (для студентов) -->
+            <VerticalStackLayout x:Name="SubmitPanel"
+                                 IsVisible="false"
+                                 Spacing="10"
+                                 Margin="0,20,0,0">
+                <Label Text="Отправить решение"
+                       FontSize="18"
+                       FontAttributes="Bold"/>
+                
+                <Entry x:Name="ContentEntry"
+                       Placeholder="Комментарий к решению"
+                       MaxLength="500"/>
+                
+                <Grid ColumnDefinitions="*, Auto">
+                    <Label Grid.Column="0"
+                           x:Name="SelectedFileLabel"
+                           Text="Файл не выбран"
+                           VerticalOptions="Center"/>
+                    
+                    <Button Grid.Column="1"
+                            Text="Выбрать файл"
+                            Clicked="OnSelectFileClicked"/>
+                </Grid>
+                
+                <Button Text="Отправить"
+                        Clicked="OnSubmitSolutionClicked"/>
+            </VerticalStackLayout>
+
+            <!-- Индикатор загрузки -->
+            <ActivityIndicator x:Name="LoadingIndicator"
+                             IsVisible="false"
+                             IsRunning="{Binding Source={RelativeSource Self}, Path=IsVisible}"
+                             HorizontalOptions="Center"/>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="FrontEdu.Views.SchedulePage"
+             Title="Расписание и оценки">
+
+    <Grid RowDefinitions="Auto,*" Padding="20">
+        <!-- Панель фильтров -->
+        <Grid Grid.Row="0" RowDefinitions="Auto,Auto" ColumnDefinitions="*,*,Auto" Margin="0,0,0,10">
+            <Picker x:Name="TypePicker"
+                    Title="Тип изображений"
+                    Grid.Row="0" Grid.Column="0"
+                    SelectedIndexChanged="OnTypeSelected">
+                <Picker.ItemsSource>
+                    <x:Array Type="{x:Type x:String}">
+                        <x:String>Расписание</x:String>
+                        <x:String>Оценки</x:String>
+                    </x:Array>
+                </Picker.ItemsSource>
+            </Picker>
+            
+            <Picker x:Name="GroupPicker"
+                    Title="Выберите группу"
+                    Grid.Row="0" Grid.Column="1"
+                    SelectedIndexChanged="OnGroupSelected"/>
+            
+            <Picker x:Name="SubjectPicker"
+                    Title="Выберите предмет"
+                    Grid.Row="0" Grid.Column="2"
+                    SelectedIndexChanged="OnSubjectSelected"
+                    IsVisible="False"/>
+
+            <!-- Даты -->
+            <DatePicker x:Name="StartDatePicker" 
+                       Grid.Row="1" Grid.Column="0"
+                       DateSelected="OnDateSelected"/>
+            
+            <DatePicker x:Name="EndDatePicker"
+                       Grid.Row="1" Grid.Column="1"
+                       DateSelected="OnDateSelected"/>
+            
+            <Button Text="Применить"
+                    Grid.Row="1" Grid.Column="2"
+                    Clicked="OnApplyFiltersClicked"/>
+        </Grid>
+
+        <!-- Основной контент -->
+        <Grid Grid.Row="1" RowDefinitions="Auto,*">
+            <!-- Панель загрузки -->
+            <VerticalStackLayout x:Name="UploadPanel" 
+                               Grid.Row="0"
+                               Spacing="10"
+                               IsVisible="False">
+                <Label Text="Загрузка изображения" 
+                       FontSize="18" 
+                       FontAttributes="Bold"/>
+                
+                <Grid ColumnDefinitions="*,Auto">
+                    <Label x:Name="SelectedFileLabel" 
+                           Text="Файл не выбран"
+                           VerticalOptions="Center"/>
+                    
+                    <Button Grid.Column="1" 
+                            Text="Выбрать файл"
+                            Clicked="OnSelectFileClicked"/>
+                </Grid>
+                
+                <Button Text="Загрузить"
+                        Clicked="OnUploadClicked"
+                        HorizontalOptions="Fill"/>
+                
+                <BoxView HeightRequest="1" 
+                         Color="Gray" 
+                         Margin="0,10"/>
+            </VerticalStackLayout>
+
+            <!-- Список изображений -->
+            <RefreshView Grid.Row="1" 
+                         Command="{Binding RefreshCommand}">
+                <CollectionView x:Name="ImagesCollection"
+                               SelectionMode="None"
+                               EmptyView="Нет доступных изображений">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <SwipeView>
+                                <SwipeView.RightItems>
+                                    <SwipeItems>
+                                        <SwipeItem Text="Удалить"
+                                                  BackgroundColor="Red"
+                                                  Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=DeleteCommand}"
+                                                  CommandParameter="{Binding Id}"
+                                                  IsVisible="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=CanManageImages}"/>
+                                    </SwipeItems>
+                                </SwipeView.RightItems>
+                                <Frame Margin="0,5" Padding="10">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <VerticalStackLayout Spacing="5">
+                                            <Label Text="{Binding FileName}"
+                                                   FontAttributes="Bold"/>
+                                            <Label Text="{Binding Group.Name}"
+                                                   FontSize="14"/>
+                                            <Label Text="{Binding Uploader.FullName}"
+                                                   FontSize="12"/>
+                                            <Label Text="{Binding UploadedAt, StringFormat='{0:dd.MM.yyyy HH:mm}'}"
+                                                   FontSize="12"
+                                                   TextColor="Gray"/>
+                                        </VerticalStackLayout>
+                                        
+                                        <Button Grid.Column="1"
+                                                Text="Скачать"
+                                                Clicked="OnDownloadClicked"
+                                                CommandParameter="{Binding Id}"
+                                                VerticalOptions="Center"/>
+                                    </Grid>
+                                </Frame>
+                            </SwipeView>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </RefreshView>
+        </Grid>
+
+        <ActivityIndicator x:Name="LoadingIndicator"
+                          Grid.RowSpan="2"
+                          IsVisible="False"
+                          IsRunning="True"
+                          HorizontalOptions="Center"
+                          VerticalOptions="Center"/>
+    </Grid>
+</ContentPage>
