@@ -19,7 +19,7 @@ namespace FrontEdu.Services
                     return "http://10.0.2.2:5105"; // Специальный IP для Android эмулятора
                 return "http://localhost:5105";
 #else
-                return "https://your-production-api-url/";
+                return "http://localhost:5105";
 #endif
             }
             set { }

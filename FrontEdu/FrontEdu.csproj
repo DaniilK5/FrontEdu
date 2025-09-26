@@ -20,7 +20,7 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<NullabilityInfoContextSupport>true</NullabilityInfoContextSupport>
-
+		<WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
 		<!-- Display name -->
 		<ApplicationTitle>FrontEdu</ApplicationTitle>
 

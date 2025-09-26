@@ -6,6 +6,8 @@ using System.Windows.Input;
 using Debug = System.Diagnostics.Debug;
 using FrontEdu.Services;
 using FrontEdu.Models.Auth;
+using FrontEdu.Models.Constants;
+
 
 #if WINDOWS
 using Windows.Storage;
@@ -37,13 +39,27 @@ public partial class SchedulePage : ContentPage
     private DateTime? _startDate;
     private DateTime? _endDate;
 
+    private string _userRole;
+    public bool IsAdministrator
+    {
+        get => _userRole == UserRoles.Administrator;
+        private set
+        {
+            if (_userRole != (value ? UserRoles.Administrator : _userRole))
+            {
+                _userRole = value ? UserRoles.Administrator : _userRole;
+                OnPropertyChanged();
+            }
+        }
+    }
+
     public SchedulePage(IFileSaver fileSaver)
     {
         InitializeComponent();
         FileSaver = fileSaver;
         _images = new ObservableCollection<ImageDetails>();
         ImagesCollection.ItemsSource = _images;
-        
+
         // Установка начальных дат в UTC
         var today = DateTime.UtcNow.Date;
         StartDatePicker.Date = today.AddMonths(-1);
@@ -76,11 +92,11 @@ public partial class SchedulePage : ContentPage
             if (response.IsSuccessStatusCode)
             {
                 var permissions = await response.Content.ReadFromJsonAsync<UserPermissionsResponse>();
-                CanManageImages = permissions?.Categories.Schedule.CanManage ?? false;
-                OnPropertyChanged(nameof(CanManageImages));
+                _userRole = permissions?.Role;
+                OnPropertyChanged(nameof(IsAdministrator));
 
-                // Показываем панель загрузки только тем, кто может управлять расписанием
-                UploadPanel.IsVisible = CanManageImages;
+                // Показываем панель загрузки только администраторам
+                UploadPanel.IsVisible = IsAdministrator;
             }
 
             await LoadImages();
@@ -91,103 +107,153 @@ public partial class SchedulePage : ContentPage
             await DisplayAlert("Ошибка", "Не удалось загрузить расписание", "OK");
         }
     }
-
     private async Task LoadImages()
     {
-        if (_isLoading) return;
+        if (_isLoading)
+        {
+            Debug.WriteLine("LoadImages: Already loading images, returning");
+            return;
+        }
 
         try
         {
+            Debug.WriteLine($"LoadImages: Starting load with parameters:");
+            Debug.WriteLine($"- Current type: {_currentType}");
+            Debug.WriteLine($"- Selected group ID: {_selectedGroupId}");
+            Debug.WriteLine($"- Selected subject ID: {_selectedSubjectId}");
+            Debug.WriteLine($"- Start date: {_startDate}");
+            Debug.WriteLine($"- End date: {_endDate}");
+
             _isLoading = true;
             LoadingIndicator.IsVisible = true;
 
             // Формируем URL в зависимости от типа и фильтров
             var queryParams = new List<string>();
-            
+
             if (_selectedGroupId.HasValue)
+            {
+                Debug.WriteLine($"Adding group filter: {_selectedGroupId.Value}");
                 queryParams.Add($"groupId={_selectedGroupId}");
-                
+            }
+
             if (_currentType == ImageType.Grades && _selectedSubjectId.HasValue)
+            {
+                Debug.WriteLine($"Adding subject filter: {_selectedSubjectId.Value}");
                 queryParams.Add($"subjectId={_selectedSubjectId}");
-                
+            }
+
             // Преобразуем даты в UTC формат
             if (_startDate.HasValue)
             {
                 var utcStartDate = DateTime.SpecifyKind(_startDate.Value.Date, DateTimeKind.Utc);
+                Debug.WriteLine($"Adding start date filter: {utcStartDate:o}");
                 queryParams.Add($"startDate={utcStartDate:yyyy-MM-ddTHH:mm:ss.fffZ}");
             }
-                
+
             if (_endDate.HasValue)
             {
                 var utcEndDate = DateTime.SpecifyKind(_endDate.Value.Date.AddDays(1).AddSeconds(-1), DateTimeKind.Utc);
+                Debug.WriteLine($"Adding end date filter: {utcEndDate:o}");
                 queryParams.Add($"endDate={utcEndDate:yyyy-MM-ddTHH:mm:ss.fffZ}");
             }
 
             var queryString = queryParams.Any() ? $"?{string.Join("&", queryParams)}" : string.Empty;
-            
-            var baseUrl = _currentType == ImageType.Schedule 
-                ? "api/GradeImages/schedule" 
+
+            var baseUrl = _currentType == ImageType.Schedule
+                ? "api/GradeImages/schedule"
                 : "api/GradeImages";
 
             var fullUrl = $"{baseUrl}{queryString}";
-            Debug.WriteLine($"Loading images from URL: {fullUrl}"); // Добавляем логирование URL
-                
+            Debug.WriteLine($"LoadImages: Requesting URL: {fullUrl}");
+
+            // Проверяем состояние HTTP-клиента
+            if (_httpClient == null)
+            {
+                Debug.WriteLine("LoadImages: HTTP client is null, creating new instance");
+                _httpClient = await AppConfig.CreateHttpClientAsync();
+            }
+
+            Debug.WriteLine("LoadImages: Sending GET request");
             var response = await _httpClient.GetAsync(fullUrl);
-            Debug.WriteLine($"Response status code: {response.StatusCode}"); // Добавляем логирование статуса ответа
-            
+            Debug.WriteLine($"LoadImages: Received response with status code: {response.StatusCode}");
+
+            var content = await response.Content.ReadAsStringAsync();
+            Debug.WriteLine($"LoadImages: Response content: {content}");
+
             if (response.IsSuccessStatusCode)
             {
+                Debug.WriteLine("LoadImages: Successfully received response, processing data");
                 _images.Clear();
 
                 if (_currentType == ImageType.Schedule)
                 {
+                    Debug.WriteLine("LoadImages: Processing schedule images");
                     var result = await response.Content.ReadFromJsonAsync<ScheduleImagesResponse>();
+                    Debug.WriteLine($"LoadImages: Deserialized schedule response, found {result?.Schedules?.Count ?? 0} images");
+
                     if (result?.Schedules != null)
                     {
                         foreach (var image in result.Schedules.OrderByDescending(i => i.UploadedAt))
                         {
                             _images.Add(image);
+                            Debug.WriteLine($"LoadImages: Added schedule image: {image.FileName} (ID: {image.Id})");
                         }
                     }
                 }
                 else // для ImageType.Grades
                 {
-                    var jsonString = await response.Content.ReadAsStringAsync();
-                    Debug.WriteLine($"JSON response: {jsonString}");
-                    
-                    // Изменяем десериализацию на List<ImageDetails>
-                    var images = await response.Content.ReadFromJsonAsync<List<ImageDetails>>();
-                    if (images != null)
+                    Debug.WriteLine("LoadImages: Processing grade images");
+                    var gradesResponse = await response.Content.ReadFromJsonAsync<GradesImagesResponse>();
+                    Debug.WriteLine($"LoadImages: Deserialized grades response, found {gradesResponse?.Images?.Count ?? 0} images");
+
+                    if (gradesResponse?.Images != null)
                     {
-                        _images.Clear();
-                        foreach (var image in images.OrderByDescending(i => i.UploadedAt))
+                        foreach (var image in gradesResponse.Images.OrderByDescending(i => i.UploadedAt))
                         {
-                            _images.Add(image);
+                            _images.Add(new ImageDetails
+                            {
+                                Id = image.Id,
+                                FileName = image.FileName,
+                                FileType = image.FileType,
+                                UploadedAt = image.UploadedAt,
+                                Group = image.Group,
+                                Uploader = image.Uploader
+                            });
+                            Debug.WriteLine($"LoadImages: Added grade image: {image.FileName} (ID: {image.Id})");
                         }
                     }
                 }
 
-                Debug.WriteLine($"Loaded images count: {_images.Count}");
+                Debug.WriteLine($"LoadImages: Completed successfully, total images loaded: {_images.Count}");
             }
             else
             {
-                var error = await response.Content.ReadAsStringAsync();
-                Debug.WriteLine($"Error response content: {error}"); // Добавляем логирование ошибки
-                await DisplayAlert("Ошибка", error, "OK");
+                Debug.WriteLine($"LoadImages: Request failed with status code {response.StatusCode}");
+                Debug.WriteLine($"LoadImages: Error response content: {content}");
+                await DisplayAlert("Ошибка", content, "OK");
             }
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Error loading images: {ex}");
+            Debug.WriteLine($"LoadImages: Exception occurred: {ex.GetType().Name}");
+            Debug.WriteLine($"LoadImages: Exception message: {ex.Message}");
+            Debug.WriteLine($"LoadImages: Stack trace: {ex.StackTrace}");
+
+            if (ex.InnerException != null)
+            {
+                Debug.WriteLine($"LoadImages: Inner exception: {ex.InnerException.Message}");
+                Debug.WriteLine($"LoadImages: Inner exception stack trace: {ex.InnerException.StackTrace}");
+            }
+
             await DisplayAlert("Ошибка", "Не удалось загрузить список изображений", "OK");
         }
         finally
         {
             _isLoading = false;
             LoadingIndicator.IsVisible = false;
+            Debug.WriteLine("LoadImages: Completed execution");
         }
     }
-
     private async void OnSelectFileClicked(object sender, EventArgs e)
     {
         try
@@ -195,24 +261,24 @@ public partial class SchedulePage : ContentPage
             var customFileType = new FilePickerFileType(
                 new Dictionary<DevicePlatform, IEnumerable<string>>
                 {
-                    { DevicePlatform.WinUI, new[] { 
+                    { DevicePlatform.WinUI, new[] {
                         ".jpg", ".jpeg", ".png", // Добавляем форматы изображений
-                        ".pdf", ".doc", ".docx", ".xls", ".xlsx" 
+                        ".pdf", ".doc", ".docx", ".xls", ".xlsx"
                     }},
-                    { DevicePlatform.Android, new[] { 
+                    { DevicePlatform.Android, new[] {
                         "image/jpeg", "image/png", // Добавляем MIME-типы для изображений
                         "application/pdf",
                         "application/msword",
                         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                         "application/vnd.ms-excel",
-                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" 
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                     }}
                 });
 
             var options = new PickOptions
             {
-                PickerTitle = _currentType == ImageType.Schedule 
-                    ? "Выберите файл расписания" 
+                PickerTitle = _currentType == ImageType.Schedule
+                    ? "Выберите файл расписания"
                     : "Выберите файл с оценками",
                 FileTypes = customFileType
             };
@@ -294,7 +360,7 @@ public partial class SchedulePage : ContentPage
 
                 // Используем общий эндпоинт для скачивания изображений
                 var response = await _httpClient.GetAsync($"api/GradeImages/{fileId}/download");
-                
+
                 if (response.IsSuccessStatusCode)
                 {
                     var fileName = response.Content.Headers.ContentDisposition?.FileName?.Trim('"')
@@ -460,10 +526,10 @@ public partial class SchedulePage : ContentPage
         {
             _currentType = TypePicker.SelectedIndex == 0 ? ImageType.Schedule : ImageType.Grades;
             Debug.WriteLine($"Selected type: {_currentType}"); // Добавляем логирование типа
-            
+
             // Показываем/скрываем picker предметов в зависимости от типа
             SubjectPicker.IsVisible = _currentType == ImageType.Grades;
-            
+
             // Сбрасываем выбранный предмет при переключении на расписание
             if (_currentType == ImageType.Schedule)
             {
@@ -474,13 +540,13 @@ public partial class SchedulePage : ContentPage
             // Обновляем заголовок для выбора файла
             var filePickerTitle = _currentType == ImageType.Schedule ? "Выберите файл расписания" : "Выберите файл оценок";
             SelectedFileLabel.Text = "Файл не выбран";
-            
+
             await LoadGroups(); // Перезагружаем список групп
             if (_currentType == ImageType.Grades)
             {
                 await LoadSubjects(); // Загружаем предметы для оценок
             }
-            
+
             await LoadImages(); // Обновляем список изображений
         }
         catch (Exception ex)
@@ -707,8 +773,8 @@ public partial class SchedulePage : ContentPage
 
     public class DateRange
     {
-        public DateTime Earliest { get; set; }
-        public DateTime Latest { get; set; }
+        public DateTime? Earliest { get; set; }
+        public DateTime? Latest { get; set; }
     }
 
     public class ImageDetails
@@ -745,8 +811,19 @@ public partial class SchedulePage : ContentPage
     {
         public int TotalCount { get; set; }
         public FilterInfo FilterInfo { get; set; }
-        public DateRange DateRange { get; set; }
-        public List<ImageDetails> Images { get; set; }
+        public List<ImageResponseItem> Images { get; set; }
+    }
+
+    public class ImageResponseItem
+    {
+        public int Id { get; set; }
+        public string FileName { get; set; }
+        public string FileType { get; set; }
+        public DateTime UploadedAt { get; set; }
+        public int Type { get; set; }
+        public SubjectInfo Subject { get; set; }
+        public GroupInfo Group { get; set; }
+        public UploaderInfo Uploader { get; set; }
     }
 
     public class ScheduleImagesResponse

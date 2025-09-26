@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:views="clr-namespace:FrontEdu.Views"
              x:Class="FrontEdu.Views.CoursesPage"
-             Title="Курсы">
+             Title="Темы">
 
     <Grid RowDefinitions="Auto,*">
         <!-- Верхняя панель -->
@@ -14,7 +14,7 @@
 
             <SearchBar Grid.Column="0"
                        x:Name="SearchBar"
-                       Placeholder="Поиск курса"
+                       Placeholder="Поиск темы"
                        TextChanged="OnSearchTextChanged"/>
 
             <Button Grid.Column="1"

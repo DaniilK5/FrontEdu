@@ -11,7 +11,6 @@ namespace FrontEdu.Views
         private UserPermissionsResponse _userPermissions;
         private HttpClient _httpClient;
         private bool _isInitialized;
-
         public MainPage()
         {
             InitializeComponent();
@@ -51,10 +50,11 @@ namespace FrontEdu.Views
 
                         // Добавляем проверку для кнопки предметов
                         SubjectsButton.IsVisible = _userPermissions.Categories.Courses.CanView;
-                        CoursesButton.IsVisible = _userPermissions.Categories.Courses.CanView;
-                        AssignmentsButton.IsVisible = _userPermissions.Categories.Assignments.CanView || 
-                                                    _userPermissions.Categories.Assignments.CanSubmit;
-
+                        // CoursesButton.IsVisible = _userPermissions.Categories.Courses.CanView;
+                        // AssignmentsButton.IsVisible = _userPermissions.Categories.Assignments.CanView || 
+                        //                            _userPermissions.Categories.Assignments.CanSubmit;
+                        AssignmentsButton.IsVisible = false;
+                        CoursesButton.IsVisible = false;
                         // Секция администрирования
                         AdminSection.IsVisible = _userPermissions.Permissions.ManageUsers;
 

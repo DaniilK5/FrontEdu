@@ -258,7 +258,7 @@ namespace FrontEdu
             {
                 tab.Items.Add(new ShellContent
                 {
-                    Title = "Курсы",
+                    Title = "Темы",
                     Route = "CoursesPage",
                     ContentTemplate = new DataTemplate(typeof(CoursesPage))
                 });

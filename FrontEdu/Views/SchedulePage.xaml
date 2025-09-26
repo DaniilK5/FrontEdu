@@ -50,7 +50,7 @@
             <VerticalStackLayout x:Name="UploadPanel" 
                                Grid.Row="0"
                                Spacing="10"
-                               IsVisible="False">
+                               IsVisible="{Binding IsAdministrator}">
                 <Label Text="Загрузка изображения" 
                        FontSize="18" 
                        FontAttributes="Bold"/>
@@ -89,7 +89,7 @@
                                                   BackgroundColor="Red"
                                                   Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=DeleteCommand}"
                                                   CommandParameter="{Binding Id}"
-                                                  IsVisible="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=CanManageImages}"/>
+                                                  IsVisible="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=IsAdministrator}"/>
                                     </SwipeItems>
                                 </SwipeView.RightItems>
                                 <Frame Margin="0,5" Padding="10">
